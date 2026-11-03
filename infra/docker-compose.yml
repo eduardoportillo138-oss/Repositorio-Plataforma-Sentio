@@ -1,0 +1,48 @@
+# Infraestructura local de desarrollo.
+# Uso (PowerShell, desde la raíz):  pnpm infra:up   |   pnpm infra:down
+name: sentio
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: sentio-mongo
+    # Replica set de un nodo: habilita transacciones y change streams.
+    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    ports:
+      # Solo expuesto en la máquina local.
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Inicializa el replica set la primera vez y luego solo verifica su estado.
+      # El miembro se anuncia como localhost:27017 para que la API (que corre en el host) lo resuelva.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }"
+      interval: 5s
+      timeout: 10s
+      start_period: 10s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sentio-redis
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  redis-data:
