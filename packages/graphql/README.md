@@ -1,7 +1,7 @@
 # @sentio/graphql
 
 - `schema.graphql`: SDL generado por `apps/api` (code-first). **No editar a mano.**
-  Regenerar con `pnpm schema:emit` (no requiere MongoDB) o arrancando la API en desarrollo.
+  Regenerar con `pnpm schema:emit` (no requiere MongoDB) cada vez que cambien resolvers o DTOs.
 - `operations/**/*.graphql`: queries, mutaciones y fragments que usan los clientes.
 - `codegen.ts`: genera tipos + hooks de Apollo en `packages/api-client/src/generated/graphql.ts`.
 

@@ -19,6 +19,7 @@ export function base({ tsconfigRootDir, workspace = 'package' }) {
         '**/generated/**',
         '**/*.config.{js,mjs,cjs,ts}',
         '**/eslint.config.mjs',
+        '**/scripts/**/*.mjs',
         '**/babel.config.js',
         '**/metro.config.js',
         '**/next-env.d.ts',

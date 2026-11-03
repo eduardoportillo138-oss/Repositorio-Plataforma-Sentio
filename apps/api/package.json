@@ -11,7 +11,8 @@
     "test": "jest --forceExit",
     "test:unit": "jest --selectProjects unit",
     "test:e2e": "jest --selectProjects e2e --forceExit",
-    "schema:emit": "nest build && node dist/scripts/emit-schema.js"
+    "schema:emit": "nest build && node dist/scripts/emit-schema.js",
+    "db:memory": "node scripts/mongo-memory.mjs"
   },
   "dependencies": {
     "@apollo/server": "5.5.1",

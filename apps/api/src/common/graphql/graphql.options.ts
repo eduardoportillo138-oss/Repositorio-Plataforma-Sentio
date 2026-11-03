@@ -27,8 +27,9 @@ export function buildGraphqlOptions(
   const isProd = config.isProduction;
 
   return {
-    // En test el schema se genera en memoria para no tocar el repositorio.
-    autoSchemaFile: config.isTest ? true : SCHEMA_FILE,
+    // Schema en memoria: el archivo SCHEMA_FILE lo escribe solo `pnpm schema:emit`,
+    // así el repositorio no cambia cada vez que arranca la API.
+    autoSchemaFile: true,
     sortSchema: true,
     path: '/graphql',
     playground: config.get('GRAPHQL_PLAYGROUND') && !isProd,
