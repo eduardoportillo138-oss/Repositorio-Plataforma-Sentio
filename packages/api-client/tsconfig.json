@@ -1,0 +1,9 @@
+{
+  "extends": "@sentio/config/tsconfig/react-source.json",
+  "compilerOptions": {
+    // fetch y AbortController existen en web, React Native y Node 18+.
+    "lib": ["ES2023", "DOM"],
+    "types": []
+  },
+  "include": ["src"]
+}

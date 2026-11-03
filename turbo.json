@@ -5,7 +5,6 @@
   "globalEnv": ["NODE_ENV"],
   "tasks": {
     "codegen": {
-      "dependsOn": ["^codegen"],
       "inputs": ["codegen.ts", "schema.graphql", "operations/**/*.graphql"],
       "outputs": ["../api-client/src/generated/**"]
     },
@@ -14,17 +13,18 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^build"]
     },
     "lint": {
-      "dependsOn": []
+      "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": [],
+      "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "env": ["MONGOMS_*"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     }

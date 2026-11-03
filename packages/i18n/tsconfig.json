@@ -1,0 +1,7 @@
+{
+  "extends": "@sentio/config/tsconfig/react-source.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src"]
+}

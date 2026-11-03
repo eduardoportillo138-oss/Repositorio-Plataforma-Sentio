@@ -1,0 +1,30 @@
+{
+  "name": "@sentio/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Traducciones (es por defecto, en) e instancia de i18next compartida por web y móvil.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@sentio/core": "workspace:*",
+    "i18next": "25.10.10",
+    "react-i18next": "15.7.4"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@sentio/config": "workspace:*",
+    "@types/react": "19.1.17",
+    "eslint": "9.39.5",
+    "react": "19.1.0",
+    "typescript": "5.9.3"
+  }
+}

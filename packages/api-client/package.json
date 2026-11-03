@@ -1,0 +1,31 @@
+{
+  "name": "@sentio/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Apollo Client configurado (auth + refresh automático), hooks generados y AuthProvider.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@apollo/client": "3.14.1",
+    "@sentio/core": "workspace:*",
+    "graphql": "16.14.2"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@sentio/config": "workspace:*",
+    "@sentio/graphql": "workspace:*",
+    "@types/react": "19.1.17",
+    "eslint": "9.39.5",
+    "react": "19.1.0",
+    "typescript": "5.9.3"
+  }
+}
