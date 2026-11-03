@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - argon2
+  - mongodb-memory-server
+  - '@nestjs/core'
+  - esbuild
+  - msgpackr-extract
+  - unrs-resolver

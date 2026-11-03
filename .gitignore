@@ -1,0 +1,26 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+.next/
+out/
+.expo/
+web-build/
+ios/
+android/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
