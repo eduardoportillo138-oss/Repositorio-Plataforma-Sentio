@@ -1,0 +1,7 @@
+{
+  "extends": "@sentio/config/tsconfig/library.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src"]
+}
