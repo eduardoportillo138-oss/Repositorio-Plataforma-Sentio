@@ -1,0 +1,8 @@
+{
+  "extends": "@sentio/config/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "types": ["node", "jest"]
+  },
+  "include": ["src", "test"]
+}
