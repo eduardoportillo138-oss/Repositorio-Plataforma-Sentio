@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Sentio",
+    "slug": "sentio",
+    "scheme": "sentio",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sentio.app"
+    },
+    "android": {
+      "package": "com.sentio.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router", "expo-secure-store", "expo-localization"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

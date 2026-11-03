@@ -7,6 +7,7 @@ export {
 } from './client';
 export { createMemoryTokenStorage, type TokenStorage } from './token-storage';
 export { parseApiError, type ApiErrorInfo } from './errors';
+export { apiFormErrors, NO_ERRORS, validationErrors, type FormErrors } from './form-errors';
 export {
   SentioApiProvider,
   useAuth,

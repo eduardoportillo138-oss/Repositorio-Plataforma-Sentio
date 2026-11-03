@@ -9,3 +9,11 @@ onlyBuiltDependencies:
   - esbuild
   - msgpackr-extract
   - unrs-resolver
+
+# Una sola versión de React / React Native en todo el monorepo, alineada con Expo SDK 54.
+# Sin esto, los peers de Tamagui instalan la última react-native en la raíz y Metro falla.
+overrides:
+  react: 19.1.0
+  react-dom: 19.1.0
+  react-native: 0.81.5
+  '@types/react': 19.1.17
