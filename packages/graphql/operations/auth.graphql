@@ -1,0 +1,52 @@
+fragment ViewerFields on User {
+  id
+  handle
+  displayName
+  avatarUrl
+  bio
+  email
+  createdAt
+  consents {
+    privacyNoticeVersion
+    privacyNoticeAcceptedAt
+    marketingOptIn
+  }
+}
+
+fragment AuthPayloadFields on AuthPayload {
+  accessToken
+  accessTokenExpiresAt
+  refreshToken
+  refreshTokenExpiresAt
+  user {
+    ...ViewerFields
+  }
+}
+
+mutation Register($input: RegisterInput!) {
+  register(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation RefreshToken($token: String) {
+  refreshToken(token: $token) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation Logout($allDevices: Boolean = false) {
+  logout(allDevices: $allDevices)
+}
+
+query Me {
+  me {
+    ...ViewerFields
+  }
+}

@@ -1,0 +1,166 @@
+# Generado por apps/api (pnpm --filter @sentio/api schema:emit). No editar a mano.
+
+type AuthPayload {
+  """JWT de acceso (15 min). Enviar como Authorization: Bearer <token>."""
+  accessToken: String!
+  accessTokenExpiresAt: DateTime!
+
+  """
+  Refresh token opaco (30 días, rotativo). Es null para clientes web (header x-client: web), que lo reciben en una cookie httpOnly.
+  """
+  refreshToken: String
+  refreshTokenExpiresAt: DateTime!
+  user: User!
+}
+
+"""Consentimientos del titular (solo visibles para él)."""
+type Consents {
+  marketingOptIn: Boolean!
+  marketingOptInUpdatedAt: DateTime!
+  privacyNoticeAcceptedAt: DateTime!
+  privacyNoticeVersion: String!
+}
+
+input CreateGroupInput {
+  description: String
+  name: String!
+  visibility: GroupVisibility = PRIVATE
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Group {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  memberCount: Int!
+  name: String!
+  slug: String!
+
+  """Membresía del usuario actual."""
+  viewerMembership: GroupMember
+  visibility: GroupVisibility!
+}
+
+type GroupMember {
+  groupId: ID!
+  id: ID!
+  joinedAt: DateTime
+  role: GroupRole!
+  status: MembershipStatus!
+  user: User
+  userId: ID!
+}
+
+type GroupMemberConnection {
+  edges: [GroupMemberEdge!]!
+  pageInfo: PageInfo!
+}
+
+type GroupMemberEdge {
+  cursor: String!
+  node: GroupMember!
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+  MODERATOR
+  OWNER
+}
+
+enum GroupVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+enum MembershipStatus {
+  ACTIVE
+  BANNED
+  PENDING
+}
+
+type Mutation {
+  createGroup(input: CreateGroupInput!): Group!
+  login(input: LoginInput!): AuthPayload!
+
+  """Cierra la sesión actual o todas (allDevices)."""
+  logout(allDevices: Boolean! = false): Boolean!
+
+  """
+  Canjea un refresh token por un par nuevo. Si se omite `token`, se lee de la cookie.
+  """
+  refreshToken(token: String): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+
+  """
+  Otorga o revoca el consentimiento para finalidades secundarias (marketing).
+  """
+  updateMarketingConsent(optIn: Boolean!): User!
+  updateProfile(input: UpdateProfileInput!): User!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type Query {
+  """Los grupos privados solo son visibles para sus miembros."""
+  group(id: ID!): Group!
+  groupMembers(after: String, first: Int = 20, groupId: ID!): GroupMemberConnection!
+
+  """Usuario autenticado."""
+  me: User!
+
+  """Perfil público por handle."""
+  user(handle: String!): User
+}
+
+input RegisterInput {
+  """
+  Aceptación expresa del Aviso de Privacidad vigente (LFPDPPP). Debe ser true.
+  """
+  acceptPrivacyNotice: Boolean!
+  displayName: String!
+  email: String!
+  handle: String!
+
+  """Idioma preferido: es (por defecto) o en."""
+  locale: String
+
+  """Consentimiento opcional para finalidades secundarias."""
+  marketingOptIn: Boolean
+  password: String!
+}
+
+input UpdateProfileInput {
+  avatarUrl: String
+  bio: String
+  displayName: String
+}
+
+type User {
+  avatarUrl: String
+  bio: String
+
+  """Solo visible para el propio usuario."""
+  consents: Consents
+  createdAt: DateTime!
+  displayName: String!
+
+  """Solo visible para el propio usuario."""
+  email: String
+  handle: String!
+  id: ID!
+}

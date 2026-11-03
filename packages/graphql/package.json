@@ -1,0 +1,23 @@
+{
+  "name": "@sentio/graphql",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Schema GraphQL (generado por apps/api), operaciones de los clientes y configuración de GraphQL Code Generator.",
+  "files": [
+    "schema.graphql",
+    "operations"
+  ],
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:watch": "graphql-codegen --config codegen.ts --watch"
+  },
+  "devDependencies": {
+    "@graphql-codegen/add": "5.0.3",
+    "@graphql-codegen/cli": "5.0.7",
+    "@graphql-codegen/typescript": "4.1.6",
+    "@graphql-codegen/typescript-operations": "4.6.1",
+    "@graphql-codegen/typescript-react-apollo": "4.4.2",
+    "graphql": "16.14.2",
+    "typescript": "5.9.3"
+  }
+}
