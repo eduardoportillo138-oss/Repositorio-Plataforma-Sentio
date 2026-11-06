@@ -10,7 +10,6 @@ import {
 } from '@nestjs/graphql';
 import { canViewGroupContent } from '@sentio/core';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Errors } from '../../common/errors/app-error';
 import { type AuthUser, type GqlContext } from '../../common/graphql/context';
 import { ConnectionArgs } from '../../common/pagination/connection.type';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -44,15 +43,20 @@ export class GroupsResolver {
   }
 
   @Query(() => GroupModel, {
-    description: 'Los grupos privados solo son visibles para sus miembros.',
+    nullable: true,
+    description:
+      'Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, ' +
+      'para no revelar la existencia de grupos privados).',
   })
   async group(
     @CurrentUser() viewer: AuthUser,
     @Args('id', { type: () => ID }) id: string,
-  ): Promise<GroupModel> {
-    const group = await this.groups.getById(id);
-    const membership = await this.groups.findMembership(id, viewer.userId);
-    if (!canViewGroupContent(group.visibility, membership)) throw Errors.forbiddenGroup(id);
+  ): Promise<GroupModel | null> {
+    const [group, membership] = await Promise.all([
+      this.groups.findById(id),
+      this.groups.findMembership(id, viewer.userId),
+    ]);
+    if (!group || !canViewGroupContent(group.visibility, membership)) return null;
     return toGroupModel(group);
   }
 

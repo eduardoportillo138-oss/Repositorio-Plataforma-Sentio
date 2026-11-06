@@ -351,7 +351,7 @@ describe('Groups (integración): GroupMembershipGuard', () => {
     return res.data!.register.accessToken;
   }
 
-  it('el owner ve los miembros; un no miembro recibe FORBIDDEN_GROUP', async () => {
+  it('el owner ve los miembros; para un no miembro el grupo privado no existe', async () => {
     const ownerToken = await signUp('owner1');
     const strangerToken = await signUp('stranger1');
 
@@ -387,16 +387,21 @@ describe('Groups (integración): GroupMembershipGuard', () => {
     ]);
     expect(members.data!.groupMembers.pageInfo.hasNextPage).toBe(false);
 
-    const denied = await t.gql(MEMBERS, { groupId: group.id }, { token: strangerToken });
-    expect(code(denied)).toBe(ErrorCode.FORBIDDEN_GROUP);
+    const GROUP = `query($id: ID!) { group(id: $id) { id } }`;
+    const missingId = '0123456789abcdef01234567';
 
-    const hidden = await t.gql(
-      `query($id: ID!) { group(id: $id) { id } }`,
-      { id: group.id },
-      {
-        token: strangerToken,
-      },
-    );
-    expect(code(hidden)).toBe(ErrorCode.FORBIDDEN_GROUP);
+    // Un grupo privado ajeno y uno inexistente responden exactamente igual.
+    const denied = await t.gql(MEMBERS, { groupId: group.id }, { token: strangerToken });
+    const missing = await t.gql(MEMBERS, { groupId: missingId }, { token: strangerToken });
+    expect(code(denied)).toBe(ErrorCode.NOT_FOUND);
+    expect(denied.errors?.[0]?.message).toBe(missing.errors?.[0]?.message);
+    expect(code(denied)).toBe(code(missing));
+    expect(denied.errors?.[0]?.extensions).not.toHaveProperty('groupId');
+
+    const hidden = await t.gql(GROUP, { id: group.id }, { token: strangerToken });
+    const nonexistent = await t.gql(GROUP, { id: missingId }, { token: strangerToken });
+    expect(hidden.errors).toBeUndefined();
+    expect(hidden.data).toEqual({ group: null });
+    expect(nonexistent.data).toEqual({ group: null });
   });
 });

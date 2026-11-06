@@ -116,8 +116,10 @@ type PageInfo {
 }
 
 type Query {
-  """Los grupos privados solo son visibles para sus miembros."""
-  group(id: ID!): Group!
+  """
+  Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, para no revelar la existencia de grupos privados).
+  """
+  group(id: ID!): Group
   groupMembers(after: String, first: Int = 20, groupId: ID!): GroupMemberConnection!
 
   """Usuario autenticado."""

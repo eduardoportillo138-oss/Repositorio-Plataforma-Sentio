@@ -162,8 +162,8 @@ export type PageInfo = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Los grupos privados solo son visibles para sus miembros. */
-  group: Group;
+  /** Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, para no revelar la existencia de grupos privados). */
+  group: Maybe<Group>;
   groupMembers: GroupMemberConnection;
   /** Usuario autenticado. */
   me: User;

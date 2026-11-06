@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { GroupRole, MembershipStatus } from '@sentio/core';
 import { Connection, Model, Types } from 'mongoose';
-import { Errors } from '../../common/errors/app-error';
 import { type Connection as RelayConnection } from '../../common/pagination/connection.type';
 import { paginate } from '../../common/pagination/paginate';
 import { type GroupMemberModel, toGroupMemberModel } from './dto/group.model';
@@ -56,12 +55,6 @@ export class GroupsService {
   async findById(groupId: string): Promise<Group | null> {
     if (!Types.ObjectId.isValid(groupId)) return null;
     return this.groupModel.findById(groupId).lean<Group>().exec();
-  }
-
-  async getById(groupId: string): Promise<Group> {
-    const group = await this.findById(groupId);
-    if (!group) throw Errors.notFound('Grupo');
-    return group;
   }
 
   async findMembership(groupId: string, userId: string): Promise<GroupMember | null> {

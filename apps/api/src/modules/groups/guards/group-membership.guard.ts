@@ -1,7 +1,7 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { membershipSatisfies } from '@sentio/core';
+import { canViewGroupContent, membershipSatisfies } from '@sentio/core';
 import { Types } from 'mongoose';
 import { Errors } from '../../../common/errors/app-error';
 import { type AppRequest, getRequest } from '../../../common/graphql/context';
@@ -13,7 +13,14 @@ export type RequestWithMembership = AppRequest & { groupMembership?: GroupMember
 
 /**
  * Verifica que el usuario autenticado tenga una membresía activa con el rol mínimo exigido.
- * Se ejecuta después del GqlAuthGuard global. Responde FORBIDDEN_GROUP si no cumple.
+ * Se ejecuta después del GqlAuthGuard global.
+ *
+ * - NOT_FOUND si el grupo no existe o el usuario no puede ver su contenido (grupo no público
+ *   sin membresía activa, o usuario baneado): la respuesta es idéntica a la de un grupo
+ *   inexistente, así no se revela que existe.
+ * - FORBIDDEN_GROUP solo si el usuario sí puede ver el grupo pero no alcanza el rol
+ *   (miembro activo con rol insuficiente, o no miembro de un grupo público).
+ *
  * Deja la membresía en `req.groupMembership` para que el resolver no tenga que volver a leerla.
  */
 @Injectable()
@@ -38,7 +45,13 @@ export class GroupMembershipGuard implements CanActivate {
       throw Errors.badInput(`Falta un "${meta.groupIdArg}" válido.`);
     }
 
-    const membership = await this.groups.findMembership(groupId, req.user.userId);
+    const [group, membership] = await Promise.all([
+      this.groups.findById(groupId),
+      this.groups.findMembership(groupId, req.user.userId),
+    ]);
+    if (!group || !canViewGroupContent(group.visibility, membership)) {
+      throw Errors.notFound('Grupo');
+    }
     if (!membershipSatisfies(membership, meta.role)) {
       throw Errors.forbiddenGroup(groupId);
     }
