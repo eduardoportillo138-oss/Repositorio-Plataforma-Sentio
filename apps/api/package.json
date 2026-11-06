@@ -8,9 +8,10 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "jest --forceExit",
+    "test": "jest",
     "test:unit": "jest --selectProjects unit",
-    "test:e2e": "jest --selectProjects e2e --forceExit",
+    "test:e2e": "jest --selectProjects e2e",
+    "test:handles": "jest --detectOpenHandles",
     "schema:emit": "nest build && node dist/scripts/emit-schema.js",
     "db:memory": "node scripts/mongo-memory.mjs"
   },

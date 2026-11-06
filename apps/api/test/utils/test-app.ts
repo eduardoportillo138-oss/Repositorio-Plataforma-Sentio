@@ -1,5 +1,7 @@
 import { type INestApplication } from '@nestjs/common';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
+import { type Connection, ConnectionStates } from 'mongoose';
 import request from 'supertest';
 import { type App } from 'supertest/types';
 import { AppModule } from '../../src/app.module';
@@ -65,5 +67,17 @@ export async function createTestApp(): Promise<TestApp> {
     };
   };
 
-  return { app, gql, close: () => app.close() };
+  const connection = app.get<Connection>(getConnectionToken());
+
+  /**
+   * Cierra la app (servidor HTTP, Socket.IO, cache de sesiones) y garantiza que la conexión de
+   * Mongoose quede cerrada: sin esto Jest no termina por sí solo y haría falta --forceExit.
+   * El MongoDB en memoria lo detiene global-teardown.ts.
+   */
+  const close = async (): Promise<void> => {
+    await app.close();
+    if (connection.readyState !== ConnectionStates.disconnected) await connection.close();
+  };
+
+  return { app, gql, close };
 }
