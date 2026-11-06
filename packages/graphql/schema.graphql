@@ -23,6 +23,11 @@ type Consents {
 
 input CreateGroupInput {
   description: String
+
+  """
+  Si se omite: INVITE_ONLY para SECRET, REQUEST para PRIVATE y OPEN para PUBLIC. Un grupo SECRET solo admite INVITE_ONLY.
+  """
+  joinPolicy: JoinPolicy
   name: String!
   visibility: GroupVisibility = PRIVATE
 }
@@ -36,6 +41,7 @@ type Group {
   createdAt: DateTime!
   description: String
   id: ID!
+  joinPolicy: JoinPolicy!
   memberCount: Int!
   name: String!
   slug: String!
@@ -73,8 +79,20 @@ enum GroupRole {
 }
 
 enum GroupVisibility {
+  """Cualquiera lo encuentra; solo los miembros ven el contenido."""
   PRIVATE
+
+  """Cualquiera lo encuentra y ve su contenido."""
   PUBLIC
+
+  """Solo los miembros saben que existe. Solo por invitación."""
+  SECRET
+}
+
+enum JoinPolicy {
+  INVITE_ONLY
+  OPEN
+  REQUEST
 }
 
 input LoginInput {

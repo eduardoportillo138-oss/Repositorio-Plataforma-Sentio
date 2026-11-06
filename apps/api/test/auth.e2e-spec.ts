@@ -351,6 +351,33 @@ describe('Groups (integración): GroupMembershipGuard', () => {
     return res.data!.register.accessToken;
   }
 
+  it('createGroup aplica la política de ingreso por defecto y rechaza SECRET sin invitación', async () => {
+    const token = await signUp('creator1');
+    const CREATE = `mutation($input: CreateGroupInput!) {
+      createGroup(input: $input) { visibility joinPolicy }
+    }`;
+    const create = (input: Record<string, unknown>) =>
+      t.gql<{ createGroup: { visibility: string; joinPolicy: string } }>(
+        CREATE,
+        { input: { name: 'Grupo de prueba', ...input } },
+        { token },
+      );
+
+    await expect(create({ visibility: 'SECRET' })).resolves.toMatchObject({
+      data: { createGroup: { visibility: 'SECRET', joinPolicy: 'INVITE_ONLY' } },
+    });
+    await expect(create({})).resolves.toMatchObject({
+      data: { createGroup: { visibility: 'PRIVATE', joinPolicy: 'REQUEST' } },
+    });
+    await expect(create({ visibility: 'PUBLIC' })).resolves.toMatchObject({
+      data: { createGroup: { visibility: 'PUBLIC', joinPolicy: 'OPEN' } },
+    });
+
+    const invalid = await create({ visibility: 'SECRET', joinPolicy: 'REQUEST' });
+    expect(code(invalid)).toBe(ErrorCode.BAD_USER_INPUT);
+    expect(invalid.errors?.[0]?.extensions?.fieldErrors).toHaveProperty('joinPolicy');
+  });
+
   it('el owner ve los miembros; para un no miembro el grupo privado no existe', async () => {
     const ownerToken = await signUp('owner1');
     const strangerToken = await signUp('stranger1');

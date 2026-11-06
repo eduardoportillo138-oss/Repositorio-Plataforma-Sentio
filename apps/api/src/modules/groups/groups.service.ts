@@ -29,6 +29,7 @@ export class GroupsService {
             slug: slugify(data.name),
             description: data.description ?? null,
             visibility: data.visibility,
+            joinPolicy: data.joinPolicy,
             ownerId: owner,
             memberCount: 1,
           },

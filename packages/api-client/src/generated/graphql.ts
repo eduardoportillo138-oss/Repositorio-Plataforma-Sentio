@@ -43,6 +43,8 @@ export type Consents = {
 
 export type CreateGroupInput = {
   description?: InputMaybe<Scalars['String']['input']>;
+  /** Si se omite: INVITE_ONLY para SECRET, REQUEST para PRIVATE y OPEN para PUBLIC. Un grupo SECRET solo admite INVITE_ONLY. */
+  joinPolicy?: InputMaybe<JoinPolicy>;
   name: Scalars['String']['input'];
   visibility?: InputMaybe<GroupVisibility>;
 };
@@ -52,6 +54,7 @@ export type Group = {
   createdAt: Scalars['DateTime']['output'];
   description: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  joinPolicy: JoinPolicy;
   memberCount: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   slug: Scalars['String']['output'];
@@ -90,8 +93,17 @@ export type GroupRole =
   | 'OWNER';
 
 export type GroupVisibility =
+  /** Cualquiera lo encuentra; solo los miembros ven el contenido. */
   | 'PRIVATE'
-  | 'PUBLIC';
+  /** Cualquiera lo encuentra y ve su contenido. */
+  | 'PUBLIC'
+  /** Solo los miembros saben que existe. Solo por invitación. */
+  | 'SECRET';
+
+export type JoinPolicy =
+  | 'INVITE_ONLY'
+  | 'OPEN'
+  | 'REQUEST';
 
 export type LoginInput = {
   email: Scalars['String']['input'];

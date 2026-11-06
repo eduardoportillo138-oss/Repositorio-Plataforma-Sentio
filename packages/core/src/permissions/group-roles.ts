@@ -13,11 +13,53 @@ export const MembershipStatus = {
 } as const;
 export type MembershipStatus = (typeof MembershipStatus)[keyof typeof MembershipStatus];
 
+/**
+ * - PUBLIC: cualquiera lo encuentra y ve su contenido.
+ * - PRIVATE: cualquiera lo encuentra (nombre y descripción en búsquedas), pero solo los
+ *   miembros activos ven su contenido.
+ * - SECRET: solo sus miembros activos saben que existe. Solo se entra por invitación.
+ */
 export const GroupVisibility = {
   PUBLIC: 'public',
   PRIVATE: 'private',
+  SECRET: 'secret',
 } as const;
 export type GroupVisibility = (typeof GroupVisibility)[keyof typeof GroupVisibility];
+
+/**
+ * Cómo se entra a un grupo:
+ * - INVITE_ONLY: solo por invitación de un miembro con permiso.
+ * - REQUEST: el usuario lo solicita (membresía pending) y un moderador la aprueba.
+ * - OPEN: el usuario entra directamente.
+ */
+export const JoinPolicy = {
+  INVITE_ONLY: 'invite_only',
+  REQUEST: 'request',
+  OPEN: 'open',
+} as const;
+export type JoinPolicy = (typeof JoinPolicy)[keyof typeof JoinPolicy];
+
+const DEFAULT_JOIN_POLICY: Record<GroupVisibility, JoinPolicy> = {
+  public: JoinPolicy.OPEN,
+  private: JoinPolicy.REQUEST,
+  secret: JoinPolicy.INVITE_ONLY,
+};
+
+/** Políticas admitidas por visibilidad: un grupo secreto no puede aceptar solicitudes. */
+const ALLOWED_JOIN_POLICIES: Record<GroupVisibility, readonly JoinPolicy[]> = {
+  public: [JoinPolicy.OPEN, JoinPolicy.REQUEST, JoinPolicy.INVITE_ONLY],
+  private: [JoinPolicy.REQUEST, JoinPolicy.INVITE_ONLY, JoinPolicy.OPEN],
+  secret: [JoinPolicy.INVITE_ONLY],
+};
+
+/** Política por defecto: OPEN si es PUBLIC, REQUEST si es PRIVATE, INVITE_ONLY si es SECRET. */
+export function defaultJoinPolicy(visibility: GroupVisibility): JoinPolicy {
+  return DEFAULT_JOIN_POLICY[visibility];
+}
+
+export function isJoinPolicyAllowed(visibility: GroupVisibility, policy: JoinPolicy): boolean {
+  return ALLOWED_JOIN_POLICIES[visibility].includes(policy);
+}
 
 const ROLE_RANK: Record<GroupRole, number> = {
   owner: 40,
@@ -58,7 +100,12 @@ export function canAssignRole(actor: Membership, role: GroupRole): boolean {
   );
 }
 
-/** Contenido de grupos privados: solo miembros activos. Públicos: cualquiera salvo baneados. */
+/**
+ * Contenido del grupo (publicaciones, miembros, detalle):
+ * - Los baneados nunca ven nada, sea cual sea la visibilidad.
+ * - PUBLIC: cualquiera.
+ * - PRIVATE y SECRET: solo miembros activos (pending no cuenta).
+ */
 export function canViewGroupContent(
   visibility: GroupVisibility,
   membership: Membership | null | undefined,
@@ -66,4 +113,19 @@ export function canViewGroupContent(
   if (membership?.status === MembershipStatus.BANNED) return false;
   if (visibility === GroupVisibility.PUBLIC) return true;
   return membership?.status === MembershipStatus.ACTIVE;
+}
+
+/**
+ * Si el grupo puede aparecer en búsquedas, listados o sugerencias para este usuario:
+ * - Los baneados no vuelven a encontrar el grupo del que los banearon.
+ * - PUBLIC y PRIVATE: cualquiera.
+ * - SECRET: solo sus miembros activos.
+ */
+export function canDiscoverGroup(
+  visibility: GroupVisibility,
+  membership: Membership | null | undefined,
+): boolean {
+  if (membership?.status === MembershipStatus.BANNED) return false;
+  if (visibility === GroupVisibility.SECRET) return membership?.status === MembershipStatus.ACTIVE;
+  return true;
 }

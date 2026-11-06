@@ -28,16 +28,14 @@ function setup(options: {
     findMembership: jest.fn(() => Promise.resolve(options.membership)),
   };
   const reflector = new Reflector();
-  jest
-    .spyOn(reflector, 'getAllAndOverride')
-    .mockImplementation((key: unknown) =>
-      key === GROUP_ROLE_KEY
-        ? ({
-            role: options.required ?? 'member',
-            groupIdArg: 'groupId',
-          } satisfies GroupRoleMetadata)
-        : undefined,
-    );
+  jest.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) =>
+    key === GROUP_ROLE_KEY
+      ? ({
+          role: options.required ?? 'member',
+          groupIdArg: 'groupId',
+        } satisfies GroupRoleMetadata)
+      : undefined,
+  );
 
   const req: RequestWithMembership = { user: { userId, sessionId: 's' } } as RequestWithMembership;
   const context = {

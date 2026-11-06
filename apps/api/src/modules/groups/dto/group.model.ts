@@ -1,12 +1,26 @@
 import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { GroupRole, GroupVisibility, MembershipStatus } from '@sentio/core';
+import {
+  defaultJoinPolicy,
+  GroupRole,
+  GroupVisibility,
+  JoinPolicy,
+  MembershipStatus,
+} from '@sentio/core';
 import { Paginated } from '../../../common/pagination/connection.type';
 import { type GroupMember } from '../schemas/group-member.schema';
 import { type Group } from '../schemas/group.schema';
 
 registerEnumType(GroupRole, { name: 'GroupRole' });
 registerEnumType(MembershipStatus, { name: 'MembershipStatus' });
-registerEnumType(GroupVisibility, { name: 'GroupVisibility' });
+registerEnumType(GroupVisibility, {
+  name: 'GroupVisibility',
+  valuesMap: {
+    PUBLIC: { description: 'Cualquiera lo encuentra y ve su contenido.' },
+    PRIVATE: { description: 'Cualquiera lo encuentra; solo los miembros ven el contenido.' },
+    SECRET: { description: 'Solo los miembros saben que existe. Solo por invitación.' },
+  },
+});
+registerEnumType(JoinPolicy, { name: 'JoinPolicy' });
 
 @ObjectType('Group')
 export class GroupModel {
@@ -24,6 +38,9 @@ export class GroupModel {
 
   @Field(() => GroupVisibility)
   visibility!: GroupVisibility;
+
+  @Field(() => JoinPolicy)
+  joinPolicy!: JoinPolicy;
 
   @Field(() => Int)
   memberCount!: number;
@@ -63,6 +80,8 @@ export function toGroupModel(doc: Group): GroupModel {
     slug: doc.slug,
     description: doc.description ?? null,
     visibility: doc.visibility,
+    // Documentos creados antes de que existiera el campo.
+    joinPolicy: doc.joinPolicy ?? defaultJoinPolicy(doc.visibility),
     memberCount: doc.memberCount,
     createdAt: doc.createdAt,
   };
