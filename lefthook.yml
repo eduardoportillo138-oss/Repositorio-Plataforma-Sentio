@@ -1,0 +1,7 @@
+# Hooks de Git gestionados por lefthook (se instalan solos con `pnpm install` vía "prepare").
+# Para reinstalarlos a mano: pnpm exec lefthook install
+pre-commit:
+  jobs:
+    - name: gitleaks
+      # Bloquea el commit si los cambios en stage contienen secretos.
+      run: node scripts/gitleaks-staged.mjs

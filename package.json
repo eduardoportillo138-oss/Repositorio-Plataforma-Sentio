@@ -6,6 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "prepare": "lefthook install",
     "dev": "turbo run dev",
     "dev:api": "turbo run dev --filter=@sentio/api",
     "dev:web": "turbo run dev --filter=@sentio/web",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@sentio/config": "workspace:*",
+    "lefthook": "2.2.2",
     "prettier": "3.9.10",
     "turbo": "2.11.10",
     "typescript": "5.9.3"
