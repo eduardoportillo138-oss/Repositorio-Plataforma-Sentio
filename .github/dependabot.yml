@@ -1,0 +1,47 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: America/Mexico_City
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      nestjs:
+        patterns: ['@nestjs/*']
+      graphql-codegen:
+        patterns: ['@graphql-codegen/*']
+      types:
+        patterns: ['@types/*']
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # React y React Native van fijados a la versión de Expo SDK (overrides en
+      # pnpm-workspace.yaml); se actualizan junto con el SDK, no por separado.
+      - dependency-name: react
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: react-native
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: '@types/react'
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: expo
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: America/Mexico_City
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']

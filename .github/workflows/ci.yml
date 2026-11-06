@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secretos (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Se usa el binario oficial en lugar de gitleaks-action, que exige licencia en
+      # repositorios de organizaciones. Se verifica el checksum publicado en el release.
+      - name: Instalar gitleaks
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "${base}/${tarball}"
+          curl -sSfL "${base}/gitleaks_${GITLEAKS_VERSION}_checksums.txt" | grep " ${tarball}\$" | sha256sum -c -
+          tar -xzf "${tarball}" gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Escanear los commits nuevos
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            range="${PR_BASE}..${PR_HEAD}"
+          elif [ -z "$PUSH_BEFORE" ] || [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # Primer push de la rama: no hay commit anterior, se escanea todo el historial.
+            range="${PUSH_AFTER}"
+          else
+            range="${PUSH_BEFORE}..${PUSH_AFTER}"
+          fi
+          echo "Rango: ${range}"
+          gitleaks git --log-opts="${range}" --redact --verbose --exit-code 1
+
+  checks:
+    name: Lint, typecheck, pruebas y schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Binario de MongoDB para mongodb-memory-server en una ruta que se puede cachear.
+      MONGOMS_DOWNLOAD_DIR: ${{ github.workspace }}/../.cache/mongodb-binaries
+    steps:
+      - uses: actions/checkout@v5
+
+      # La versión de pnpm sale del campo "packageManager" del package.json raíz.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Cache de binarios de MongoDB
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MONGOMS_DOWNLOAD_DIR }}
+          key: mongoms-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: mongoms-${{ runner.os }}-
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Pruebas
+        run: pnpm test
+
+      - name: schema.graphql coincide con los resolvers
+        run: |
+          pnpm schema:emit
+          if ! git diff --exit-code -- packages/graphql/schema.graphql; then
+            echo "::error file=packages/graphql/schema.graphql::schema.graphql no coincide con lo que genera 'pnpm schema:emit'. No lo edites a mano: ejecuta 'pnpm schema:emit' y haz commit del resultado."
+            exit 1
+          fi
+
+      - name: Tipos y hooks generados al día
+        run: |
+          pnpm codegen
+          if ! git diff --exit-code -- packages/api-client/src/generated; then
+            echo "::error::packages/api-client/src/generated está desactualizado. Ejecuta 'pnpm codegen' y haz commit del resultado."
+            exit 1
+          fi
