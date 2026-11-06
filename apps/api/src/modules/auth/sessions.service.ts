@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Errors } from '../../common/errors/app-error';
@@ -7,6 +7,8 @@ import {
   Session,
   type SessionRevokeReason,
 } from './schemas/session.schema';
+import { SESSION_ACTIVITY_CACHE, type SessionActivityCache } from './session-activity.cache';
+import { SessionEvents } from './session-events';
 import { TokensService } from './tokens.service';
 
 export interface ClientMeta {
@@ -28,6 +30,8 @@ export class SessionsService {
   constructor(
     @InjectModel(Session.name) private readonly sessionModel: Model<Session>,
     private readonly tokens: TokensService,
+    @Inject(SESSION_ACTIVITY_CACHE) private readonly cache: SessionActivityCache,
+    private readonly events: SessionEvents,
   ) {}
 
   async create(userId: string, meta: ClientMeta): Promise<IssuedSession> {
@@ -100,9 +104,12 @@ export class SessionsService {
       .exec();
 
     if (reused) {
+      const sessionId = reused._id.toHexString();
+      const userId = reused.userId.toHexString();
       this.logger.warn(
-        `Reutilización de refresh token detectada: sesión ${reused._id.toHexString()} del usuario ${reused.userId.toHexString()} revocada.`,
+        `Reutilización de refresh token detectada: sesión ${sessionId} del usuario ${userId} revocada.`,
       );
+      await this.afterRevoke(userId, [sessionId], 'reuse_detected');
       throw Errors.refreshTokenReused();
     }
 
@@ -113,35 +120,78 @@ export class SessionsService {
     throw Errors.refreshTokenInvalid();
   }
 
+  /**
+   * `true` si la sesión existe, no está revocada y no venció. El resultado se cachea
+   * SESSION_ACTIVITY_TTL_SECONDS; las revocaciones lo sobrescriben al momento.
+   */
   async isActive(sessionId: string): Promise<boolean> {
     if (!Types.ObjectId.isValid(sessionId)) return false;
+
+    const cached = await this.cache.get(sessionId);
+    if (cached !== null) return cached;
+
     const found = await this.sessionModel.exists({
       _id: sessionId,
       revokedAt: null,
       expiresAt: { $gt: new Date() },
     });
-    return Boolean(found);
+    if (found) {
+      await this.cache.markActive(sessionId);
+      return true;
+    }
+    // Una sesión inactiva nunca vuelve a activarse: cachear el "no" también es seguro.
+    await this.cache.markRevoked([sessionId]);
+    return false;
   }
 
   async revoke(sessionId: string, reason: SessionRevokeReason = 'logout'): Promise<void> {
-    await this.sessionModel
-      .updateOne(
+    if (!Types.ObjectId.isValid(sessionId)) return;
+    const revoked = await this.sessionModel
+      .findOneAndUpdate(
         { _id: sessionId, revokedAt: null },
         { $set: { revokedAt: new Date(), revokedReason: reason } },
+        { new: true, projection: { _id: 1, userId: 1 } },
       )
+      .lean<Pick<Session, '_id' | 'userId'>>()
       .exec();
+    if (revoked) await this.afterRevoke(revoked.userId.toHexString(), [sessionId], reason);
   }
 
   async revokeAllForUser(
     userId: string,
     reason: SessionRevokeReason = 'logout_all',
   ): Promise<number> {
+    const owner = new Types.ObjectId(userId);
+    // Misma marca de tiempo para todo el lote: permite leer después exactamente qué sesiones
+    // revocó esta llamada (updateMany no devuelve los ids modificados).
+    const revokedAt = new Date();
     const result = await this.sessionModel
       .updateMany(
-        { userId: new Types.ObjectId(userId), revokedAt: null },
-        { $set: { revokedAt: new Date(), revokedReason: reason } },
+        { userId: owner, revokedAt: null },
+        { $set: { revokedAt, revokedReason: reason } },
       )
       .exec();
+    if (result.modifiedCount === 0) return 0;
+
+    const revoked = await this.sessionModel
+      .find({ userId: owner, revokedAt, revokedReason: reason }, { _id: 1 })
+      .lean<Pick<Session, '_id'>[]>()
+      .exec();
+    await this.afterRevoke(
+      userId,
+      revoked.map((s) => s._id.toHexString()),
+      reason,
+    );
     return result.modifiedCount;
+  }
+
+  /** Invalida la cache y avisa a los sockets abiertos. Todo camino de revocación pasa por aquí. */
+  private async afterRevoke(
+    userId: string,
+    sessionIds: string[],
+    reason: SessionRevokeReason,
+  ): Promise<void> {
+    await this.cache.markRevoked(sessionIds);
+    this.events.emitRevoked({ userId, sessionIds, reason });
   }
 }

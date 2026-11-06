@@ -34,12 +34,23 @@ export interface FeedNewItemsEvent {
   count: number;
 }
 
+/**
+ * Una sesión del usuario fue revocada (logout, logout en todos los dispositivos o
+ * reutilización de refresh token). Llega a todos los sockets del usuario: cada cliente
+ * compara `sessionId` con el `sid` de su access token y, si coincide, cierra sesión.
+ * El servidor desconecta inmediatamente después los sockets de esa sesión.
+ */
+export interface SessionRevokedEvent {
+  sessionId: string;
+  reason: 'logout' | 'logout_all' | 'reuse_detected' | 'admin';
+}
+
 export interface ServerToClientEvents {
   'notification:created': (event: NotificationCreatedEvent) => void;
   'chat:message': (event: ChatMessageEvent) => void;
   'chat:typing': (event: TypingEvent) => void;
   'feed:new-items': (event: FeedNewItemsEvent) => void;
-  'session:revoked': () => void;
+  'session:revoked': (event: SessionRevokedEvent) => void;
 }
 
 export type Ack<T = undefined> = (

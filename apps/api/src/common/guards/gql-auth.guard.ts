@@ -1,5 +1,6 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { SessionsService } from '../../modules/auth/sessions.service';
 import { TokensService } from '../../modules/auth/tokens.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { Errors } from '../errors/app-error';
@@ -7,6 +8,8 @@ import { getRequest } from '../graphql/context';
 
 /**
  * Guard global: exige un access token válido (Authorization: Bearer) salvo en `@Public()`.
+ * Además de la firma, comprueba que la sesión del token (`sid`) siga activa: tras un logout
+ * o una revocación el token deja de servir al momento, no cuando expira.
  * En rutas públicas, si llega un token válido igualmente se adjunta el usuario.
  * Los WebSockets se autentican en el handshake del gateway, no aquí.
  */
@@ -15,6 +18,7 @@ export class GqlAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly tokens: TokensService,
+    private readonly sessions: SessionsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,6 +40,10 @@ export class GqlAuthGuard implements CanActivate {
     if (!user) {
       if (isPublic) return true;
       throw Errors.unauthenticated('El token de acceso es inválido o expiró.');
+    }
+    if (!(await this.sessions.isActive(user.sessionId))) {
+      if (isPublic) return true;
+      throw Errors.unauthenticated('La sesión se cerró. Inicia sesión de nuevo.');
     }
     req.user = user;
     return true;

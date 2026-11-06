@@ -7,6 +7,13 @@ import { AuthResolver } from './auth.resolver';
 import { AuthService } from './auth.service';
 import { PasswordService } from './password.service';
 import { Session, SessionSchema } from './schemas/session.schema';
+import {
+  MemorySessionActivityCache,
+  RedisSessionActivityCache,
+  SESSION_ACTIVITY_CACHE,
+  type SessionActivityCache,
+} from './session-activity.cache';
+import { SessionEvents } from './session-events';
 import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
 
@@ -32,7 +39,23 @@ import { TokensService } from './tokens.service';
       }),
     }),
   ],
-  providers: [AuthService, AuthResolver, PasswordService, SessionsService, TokensService],
-  exports: [TokensService, SessionsService],
+  providers: [
+    AuthService,
+    AuthResolver,
+    PasswordService,
+    SessionsService,
+    TokensService,
+    SessionEvents,
+    {
+      provide: SESSION_ACTIVITY_CACHE,
+      inject: [AppConfigService],
+      // Redis solo si las colas están activas (es el mismo indicador de "hay Redis").
+      useFactory: (config: AppConfigService): SessionActivityCache =>
+        config.get('QUEUES_ENABLED')
+          ? RedisSessionActivityCache.fromUrl(config.get('REDIS_URL'))
+          : new MemorySessionActivityCache(),
+    },
+  ],
+  exports: [TokensService, SessionsService, SessionEvents],
 })
 export class AuthModule {}

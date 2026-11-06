@@ -1,8 +1,9 @@
-import { Logger } from '@nestjs/common';
+import { Logger, type OnModuleDestroy } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   type OnGatewayConnection,
+  type OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -15,28 +16,51 @@ import {
   type ServerToClientEvents,
   type SocketData,
 } from '@sentio/realtime/events';
-import { type Server, type Socket } from 'socket.io';
+import { type Subscription } from 'rxjs';
+import { type Namespace, type Socket } from 'socket.io';
+import { SessionEvents, type SessionsRevokedEvent } from '../modules/auth/session-events';
 import { SessionsService } from '../modules/auth/sessions.service';
 import { TokensService } from '../modules/auth/tokens.service';
 
-type AppServer = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+type AppNamespace = Namespace<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+>;
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 
 /**
  * Gateway Socket.IO. Autentica el handshake con el mismo access token JWT que GraphQL
  * y une cada socket a la sala personal `user:<id>`. CORS lo configura SocketIoAdapter.
+ * Al revocarse una sesión avisa con `session:revoked` y desconecta los sockets de esa sesión.
  */
 @WebSocketGateway({ namespace: REALTIME_NAMESPACE })
-export class RealtimeGateway implements OnGatewayConnection {
+export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnModuleDestroy {
   private readonly logger = new Logger(RealtimeGateway.name);
+  private revokedSubscription?: Subscription;
 
+  /** Con `namespace`, Nest inyecta el Namespace, no el Server raíz. */
   @WebSocketServer()
-  server!: AppServer;
+  server!: AppNamespace;
 
   constructor(
     private readonly tokens: TokensService,
     private readonly sessions: SessionsService,
+    private readonly sessionEvents: SessionEvents,
   ) {}
+
+  afterInit(): void {
+    this.revokedSubscription = this.sessionEvents.revoked$.subscribe((event) => {
+      this.onSessionsRevoked(event).catch((error: unknown) =>
+        this.logger.error(`No se pudo notificar la revocación de sesión: ${String(error)}`),
+      );
+    });
+  }
+
+  onModuleDestroy(): void {
+    this.revokedSubscription?.unsubscribe();
+  }
 
   async handleConnection(client: AppSocket): Promise<void> {
     const token: unknown = (client.handshake.auth as Record<string, unknown>).token;
@@ -57,6 +81,20 @@ export class RealtimeGateway implements OnGatewayConnection {
     ...args: Parameters<ServerToClientEvents[E]>
   ): void {
     this.server.to(rooms.user(userId)).emit(event, ...args);
+  }
+
+  /** Avisa a la sala del usuario y cierra los sockets autenticados con las sesiones revocadas. */
+  async onSessionsRevoked({ userId, sessionIds, reason }: SessionsRevokedEvent): Promise<void> {
+    const room = rooms.user(userId);
+    for (const sessionId of sessionIds) {
+      this.server.to(room).emit('session:revoked', { sessionId, reason });
+    }
+    const revoked = new Set(sessionIds);
+    // Solo sockets de esta instancia; con varias instancias hará falta el adaptador Redis.
+    const sockets = await this.server.in(room).fetchSockets();
+    for (const socket of sockets) {
+      if (revoked.has(socket.data.sessionId)) socket.disconnect(true);
+    }
   }
 
   @SubscribeMessage('chat:leave')

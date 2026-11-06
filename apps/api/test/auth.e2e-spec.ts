@@ -1,4 +1,7 @@
+import { type Server } from 'node:http';
+import { type AddressInfo } from 'node:net';
 import { ErrorCode } from '@sentio/core';
+import { createRealtimeClient, type RealtimeSocket } from '@sentio/realtime';
 import { createTestApp, type GqlResult, type TestApp } from './utils/test-app';
 
 const AUTH_FIELDS = `accessToken accessTokenExpiresAt refreshToken refreshTokenExpiresAt
@@ -178,6 +181,167 @@ describe('Auth (integración): registro → login → me → refresh', () => {
     expect(code(res)).toBe(ErrorCode.REFRESH_TOKEN_INVALID);
   });
 });
+
+describe('Auth (integración): un access token deja de servir al revocar su sesión', () => {
+  const bea = { ...ana, email: 'bea@example.com', handle: 'bea_mx', displayName: 'Bea' };
+  const LOGOUT_ALL = `mutation { logout(allDevices: true) }`;
+
+  beforeAll(async () => {
+    const res = await t.gql(REGISTER, { input: bea });
+    expect(res.errors).toBeUndefined();
+  });
+
+  async function login(): Promise<AuthPayload> {
+    const res = await t.gql<{ login: AuthPayload }>(LOGIN, {
+      input: { email: bea.email, password: bea.password },
+    });
+    expect(res.errors).toBeUndefined();
+    return res.data!.login;
+  }
+
+  async function expectMe(accessToken: string): Promise<void> {
+    const res = await t.gql<{ me: { handle: string } }>(ME, undefined, { token: accessToken });
+    expect(res.errors).toBeUndefined();
+    expect(res.data!.me.handle).toBe('bea_mx');
+  }
+
+  async function expectUnauthenticated(accessToken: string): Promise<void> {
+    const res = await t.gql(ME, undefined, { token: accessToken });
+    expect(code(res)).toBe(ErrorCode.UNAUTHENTICATED);
+    expect(res.data).toBeNull();
+  }
+
+  it('tras logout, me responde UNAUTHENTICATED con el mismo access token', async () => {
+    const session = await login();
+    await expectMe(session.accessToken); // deja la sesión "activa" en la cache
+
+    const out = await t.gql(LOGOUT, undefined, { token: session.accessToken });
+    expect(out.errors).toBeUndefined();
+
+    await expectUnauthenticated(session.accessToken);
+  });
+
+  it('tras logout(allDevices: true), ningún access token del usuario sirve', async () => {
+    const phone = await login();
+    const laptop = await login();
+    await expectMe(phone.accessToken);
+    await expectMe(laptop.accessToken);
+
+    const out = await t.gql(LOGOUT_ALL, undefined, { token: phone.accessToken });
+    expect(out.errors).toBeUndefined();
+
+    await expectUnauthenticated(phone.accessToken);
+    await expectUnauthenticated(laptop.accessToken);
+  });
+
+  it('tras reutilizar un refresh token, los access tokens de esa sesión dejan de servir', async () => {
+    const session = await login();
+    const rotated = (
+      await t.gql<{ refreshToken: AuthPayload }>(REFRESH, { token: session.refreshToken })
+    ).data!.refreshToken;
+    await expectMe(session.accessToken);
+    await expectMe(rotated.accessToken);
+
+    const reuse = await t.gql(REFRESH, { token: session.refreshToken });
+    expect(code(reuse)).toBe(ErrorCode.REFRESH_TOKEN_REUSED);
+
+    await expectUnauthenticated(session.accessToken);
+    await expectUnauthenticated(rotated.accessToken);
+  });
+
+  it('las rutas públicas tratan un token revocado como anónimo', async () => {
+    const session = await login();
+    await t.gql(LOGOUT, undefined, { token: session.accessToken });
+
+    const res = await t.gql<{ login: AuthPayload }>(
+      LOGIN,
+      { input: { email: bea.email, password: bea.password } },
+      { token: session.accessToken },
+    );
+    expect(res.errors).toBeUndefined();
+  });
+
+  it('Socket.IO: emite session:revoked y desconecta solo los sockets de esa sesión', async () => {
+    const revokedSession = await login();
+    const otherSession = await login();
+    const url = await listen();
+
+    const target = await connectSocket(url, revokedSession.accessToken);
+    const bystander = await connectSocket(url, otherSession.accessToken);
+    try {
+      const targetEvent = nextEvent(target, 'session:revoked');
+      const bystanderEvent = nextEvent(bystander, 'session:revoked');
+      const targetDisconnect = nextEvent(target, 'disconnect');
+
+      await t.gql(LOGOUT, undefined, { token: revokedSession.accessToken });
+
+      const expected = { sessionId: sessionIdOf(revokedSession.accessToken), reason: 'logout' };
+      await expect(targetEvent).resolves.toEqual([expected]);
+      // El otro dispositivo también recibe el aviso (misma sala) pero sigue conectado.
+      await expect(bystanderEvent).resolves.toEqual([expected]);
+      await expect(targetDisconnect).resolves.toEqual(['io server disconnect']);
+      expect(bystander.connected).toBe(true);
+    } finally {
+      target.disconnect();
+      bystander.disconnect();
+    }
+  });
+
+  it('Socket.IO: rechaza el handshake con un access token de una sesión revocada', async () => {
+    const session = await login();
+    await t.gql(LOGOUT, undefined, { token: session.accessToken });
+    const url = await listen();
+
+    const socket = createRealtimeClient({ url, getAccessToken: () => session.accessToken });
+    try {
+      const disconnected = nextEvent(socket, 'disconnect');
+      socket.connect();
+      await expect(disconnected).resolves.toEqual(['io server disconnect']);
+    } finally {
+      socket.disconnect();
+    }
+  });
+});
+
+/** Pone a escuchar la app en un puerto libre (solo una vez) y devuelve su URL base. */
+async function listen(): Promise<string> {
+  const server = t.app.getHttpServer() as Server;
+  if (!server.listening) {
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  }
+  const { port } = server.address() as AddressInfo;
+  return `http://127.0.0.1:${port}`;
+}
+
+async function connectSocket(url: string, accessToken: string): Promise<RealtimeSocket> {
+  const socket = createRealtimeClient({ url, getAccessToken: () => accessToken });
+  const connected = nextEvent(socket, 'connect');
+  socket.connect();
+  await connected;
+  // El servidor une el socket a su sala después del evento connect; un ida y vuelta lo asegura.
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  return socket;
+}
+
+function nextEvent(socket: RealtimeSocket, event: string): Promise<unknown[]> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timeout esperando "${event}"`)), 5000);
+    (socket as unknown as { once: (e: string, cb: (...a: unknown[]) => void) => void }).once(
+      event,
+      (...args: unknown[]) => {
+        clearTimeout(timer);
+        resolve(args);
+      },
+    );
+  });
+}
+
+function sessionIdOf(accessToken: string): string {
+  const payload = JSON.parse(
+    Buffer.from(accessToken.split('.')[1]!, 'base64url').toString('utf8'),
+  ) as { sid: string };
+  return payload.sid;
+}
 
 describe('Groups (integración): GroupMembershipGuard', () => {
   async function signUp(handle: string): Promise<string> {
