@@ -46,10 +46,32 @@ export const es = {
         'novedades y promociones (finalidad secundaria). Puedes ejercer tus derechos ARCO y revocar tu ' +
         'consentimiento escribiendo a {{contact}}. Consulta el Aviso de Privacidad integral en {{url}}.',
     },
+  },
+  portal: {
+    nav: {
+      label: 'Navegación principal',
+      home: 'Inicio',
+      search: 'Búsqueda',
+      profile: 'Perfil',
+    },
+    logout: 'Cerrar sesión',
     home: {
-      greeting: 'Hola, {{name}}',
-      signedInAs: 'Sesión iniciada como @{{handle}}',
-      logout: 'Cerrar sesión',
+      empty: {
+        title: 'Hola, {{name}}',
+        body: 'Aquí verás las publicaciones de la comunidad. Por ahora no hay nada que mostrar.',
+      },
+    },
+    search: {
+      empty: {
+        title: 'Búsqueda',
+        body: 'Pronto podrás buscar personas y publicaciones.',
+      },
+    },
+    profile: {
+      empty: {
+        title: '@{{handle}}',
+        body: 'Aquí podrás editar tu foto, tu biografía y tus etiquetas.',
+      },
     },
   },
   errors: {

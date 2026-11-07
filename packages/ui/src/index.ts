@@ -5,4 +5,7 @@ export { TextField, type TextFieldProps } from './components/TextField';
 export { CheckboxField, type CheckboxFieldProps } from './components/CheckboxField';
 export { Button, type ButtonProps } from './components/Button';
 export { FormMessage } from './components/FormMessage';
-export { Anchor, Paragraph, Separator, Text, XStack, YStack } from 'tamagui';
+export { NAV_ITEM_MIN_TOUCH, type NavIcon, NavItem, type NavItemProps } from './components/NavItem';
+export { EmptyState, type EmptyStateProps } from './components/EmptyState';
+export { HomeIcon, LogOutIcon, ProfileIcon, SearchIcon } from './icons';
+export { Anchor, H3, Paragraph, Separator, Spinner, Text, XStack, YStack } from 'tamagui';

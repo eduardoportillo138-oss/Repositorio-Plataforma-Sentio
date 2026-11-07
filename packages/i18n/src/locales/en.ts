@@ -46,10 +46,32 @@ export const en: Messages = {
         'promotions (secondary purpose). You can exercise your ARCO rights and withdraw your consent ' +
         'by writing to {{contact}}. Read the full Privacy Notice at {{url}}.',
     },
+  },
+  portal: {
+    nav: {
+      label: 'Main navigation',
+      home: 'Home',
+      search: 'Search',
+      profile: 'Profile',
+    },
+    logout: 'Sign out',
     home: {
-      greeting: 'Hi, {{name}}',
-      signedInAs: 'Signed in as @{{handle}}',
-      logout: 'Sign out',
+      empty: {
+        title: 'Hi, {{name}}',
+        body: "Posts from the community will show up here. There's nothing to show yet.",
+      },
+    },
+    search: {
+      empty: {
+        title: 'Search',
+        body: "Soon you'll be able to search for people and posts.",
+      },
+    },
+    profile: {
+      empty: {
+        title: '@{{handle}}',
+        body: "Here you'll be able to edit your photo, bio and tags.",
+      },
     },
   },
   errors: {
