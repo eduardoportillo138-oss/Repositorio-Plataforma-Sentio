@@ -1,0 +1,34 @@
+{
+  "name": "posts_search",
+  "collectionName": "posts",
+  "database": "sentio",
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "searchTitle": [
+        {
+          "type": "autocomplete",
+          "tokenization": "edgeGram",
+          "minGrams": 2,
+          "maxGrams": 20,
+          "foldDiacritics": true
+        },
+        { "type": "string", "analyzer": "lucene.standard" }
+      ],
+      "searchText": [
+        {
+          "type": "autocomplete",
+          "tokenization": "edgeGram",
+          "minGrams": 2,
+          "maxGrams": 20,
+          "foldDiacritics": true
+        },
+        { "type": "string", "analyzer": "lucene.standard" }
+      ],
+      "status": { "type": "token" },
+      "visibility": { "type": "token" },
+      "createdAt": { "type": "date" },
+      "_id": { "type": "objectId" }
+    }
+  }
+}

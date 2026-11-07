@@ -1,0 +1,72 @@
+# Me gusta, comentarios, compartir y detalle de una publicación.
+
+fragment PostCountsFields on Post {
+  id
+  viewerHasLiked
+  counts {
+    reactions
+    comments
+    shares
+  }
+}
+
+fragment CommentFields on Comment {
+  id
+  text
+  createdAt
+  viewerCanDelete
+  author {
+    ...PostAuthorFields
+  }
+}
+
+query PostDetail($id: ID!) {
+  post(id: $id) {
+    ...PostFields
+  }
+}
+
+mutation ToggleLike($postId: ID!) {
+  toggleLike(postId: $postId) {
+    ...PostCountsFields
+  }
+}
+
+query PostComments($postId: ID!, $first: Int = 20, $after: String) {
+  postComments(postId: $postId, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...CommentFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+mutation AddComment($postId: ID!, $text: String!) {
+  addComment(postId: $postId, text: $text) {
+    ...CommentFields
+    post {
+      ...PostCountsFields
+    }
+  }
+}
+
+mutation DeleteComment($commentId: ID!) {
+  deleteComment(commentId: $commentId) {
+    ...PostCountsFields
+  }
+}
+
+mutation SharePost($postId: ID!, $recipientIds: [ID!]!, $message: String) {
+  sharePost(postId: $postId, recipientIds: $recipientIds, message: $message) {
+    sentTo
+    post {
+      ...PostCountsFields
+    }
+  }
+}

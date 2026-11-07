@@ -15,6 +15,7 @@
   "dependencies": {
     "@apollo/client": "3.14.1",
     "@sentio/core": "workspace:*",
+    "@sentio/realtime": "workspace:*",
     "graphql": "16.14.2"
   },
   "peerDependencies": {

@@ -1,0 +1,22 @@
+{
+  "name": "users_search",
+  "collectionName": "users",
+  "database": "sentio",
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "searchName": [
+        {
+          "type": "autocomplete",
+          "tokenization": "edgeGram",
+          "minGrams": 2,
+          "maxGrams": 20,
+          "foldDiacritics": true
+        },
+        { "type": "string", "analyzer": "lucene.standard" }
+      ],
+      "handle": { "type": "token" },
+      "status": { "type": "token" }
+    }
+  }
+}

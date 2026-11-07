@@ -1,7 +1,11 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service';
+import { MediaModule } from '../modules/media/media.module';
+import { PostsModule } from '../modules/posts/posts.module';
 import { FeedFanoutProcessor } from './feed-fanout.processor';
+import { MediaProcessor } from './media.processor';
+import { PostsProcessor } from './posts.processor';
 import { NotificationsProcessor } from './notifications.processor';
 import { QueueName } from './queue-names';
 
@@ -27,9 +31,12 @@ import { QueueName } from './queue-names';
       { name: QueueName.NOTIFICATIONS },
       { name: QueueName.FEED_FANOUT },
       { name: QueueName.MEDIA },
+      { name: QueueName.POSTS },
     ),
+    MediaModule,
+    PostsModule,
   ],
-  providers: [NotificationsProcessor, FeedFanoutProcessor],
+  providers: [NotificationsProcessor, FeedFanoutProcessor, MediaProcessor, PostsProcessor],
   exports: [BullModule],
 })
 export class WorkersModule {}

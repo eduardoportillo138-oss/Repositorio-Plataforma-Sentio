@@ -13,6 +13,7 @@ import { buildGraphqlOptions } from './common/graphql/graphql.options';
 import { GqlAuthGuard } from './common/guards/gql-auth.guard';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { AppConfigService } from './config/app-config.service';
 import { AppConfigModule } from './config/config.module';
 import { GatewaysModule } from './gateways/gateways.module';
@@ -28,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PostsModule } from './modules/posts/posts.module';
 import { ReactionsModule } from './modules/reactions/reactions.module';
 import { SearchModule } from './modules/search/search.module';
+import { SharesModule } from './modules/shares/shares.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkersModule } from './workers/workers.module';
 
@@ -66,6 +68,7 @@ import { WorkersModule } from './workers/workers.module';
         };
       },
     }),
+    RateLimitModule,
     ConditionalModule.registerWhen(WorkersModule, (env) => env.QUEUES_ENABLED !== 'false'),
     AuthModule,
     UsersModule,
@@ -78,6 +81,7 @@ import { WorkersModule } from './workers/workers.module';
     NotificationsModule,
     MediaModule,
     SearchModule,
+    SharesModule,
     ModerationModule,
     GatewaysModule,
   ],

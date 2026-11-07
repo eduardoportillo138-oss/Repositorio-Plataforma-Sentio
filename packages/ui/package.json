@@ -15,16 +15,19 @@
   },
   "dependencies": {
     "@tamagui/config": "1.144.4",
+    "@tamagui/lucide-icons": "1.144.4",
     "tamagui": "1.144.4"
   },
   "peerDependencies": {
-    "react": ">=19"
+    "react": ">=19",
+    "react-native-svg": ">=15"
   },
   "devDependencies": {
     "@sentio/config": "workspace:*",
     "@types/react": "19.1.17",
     "eslint": "9.39.5",
     "react": "19.1.0",
+    "react-native-svg": "15.12.1",
     "typescript": "5.9.3"
   }
 }

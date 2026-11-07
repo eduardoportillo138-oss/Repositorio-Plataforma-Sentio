@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     'react-native-web',
     'tamagui',
     '@tamagui/config',
+    '@tamagui/lucide-icons',
+    'react-native-svg',
   ],
   webpack: (
     config: { resolve: { alias: Record<string, string>; extensions: string[] } },

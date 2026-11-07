@@ -1,15 +1,14 @@
 fragment ViewerFields on User {
-  id
-  handle
-  displayName
-  avatarUrl
-  bio
+  ...PublicUserFields
   email
   createdAt
   consents {
     privacyNoticeVersion
     privacyNoticeAcceptedAt
     marketingOptIn
+  }
+  privateContact {
+    ...PrivateContactFields
   }
 }
 

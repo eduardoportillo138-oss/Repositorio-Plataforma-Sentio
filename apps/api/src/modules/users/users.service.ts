@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { type Locale, type UpdateProfileInput } from '@sentio/core';
+import { type Locale, type PrivateContactData, type UpdateProfileInput } from '@sentio/core';
 import { type ClientSession, Model, Types } from 'mongoose';
 import { Errors } from '../../common/errors/app-error';
-import { User, type UserDocumentLean } from './schemas/user.schema';
+import { userSearchName } from '../search/search-fields';
+import { type Avatar, User, type UserDocumentLean } from './schemas/user.schema';
+import { UserEvents } from './user-events';
 
 export interface CreateUserData {
   email: string;
@@ -19,7 +21,10 @@ export interface CreateUserData {
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<User>,
+    private readonly events: UserEvents,
+  ) {}
 
   async create(data: CreateUserData, session?: ClientSession): Promise<UserDocumentLean> {
     const now = new Date();
@@ -29,6 +34,7 @@ export class UsersService {
           email: data.email,
           handle: data.handle,
           displayName: data.displayName,
+          searchName: userSearchName(data.displayName, data.handle),
           passwordHash: data.passwordHash,
           locale: data.locale,
           consents: {
@@ -44,7 +50,7 @@ export class UsersService {
       { session },
     );
     if (!doc) throw new Error('No se pudo crear el usuario.');
-    const { passwordHash: _omit, ...user } = doc.toObject();
+    const { passwordHash: _omit, searchName: _search, ...user } = doc.toObject();
     return user;
   }
 
@@ -103,7 +109,62 @@ export class UsersService {
       .lean<UserDocumentLean>()
       .exec();
     if (!doc) throw Errors.notFound('Usuario');
+    if (input.displayName !== undefined) {
+      await this.userModel
+        .updateOne(
+          { _id: doc._id },
+          { $set: { searchName: userSearchName(doc.displayName, doc.handle) } },
+        )
+        .exec();
+      this.events.profileChanged(userId);
+    }
     return doc;
+  }
+
+  /** Campo omitido = no cambia; null = se borra. */
+  async updatePrivateContact(userId: string, input: PrivateContactData): Promise<UserDocumentLean> {
+    const $set: Record<string, string> = {};
+    const $unset: Record<string, ''> = {};
+    for (const [key, value] of Object.entries(input) as [string, string | null | undefined][]) {
+      if (value === undefined) continue;
+      if (value === null) $unset[`privateContact.${key}`] = '';
+      else $set[`privateContact.${key}`] = value;
+    }
+    const update: Record<string, unknown> = {};
+    if (Object.keys($set).length) update.$set = $set;
+    if (Object.keys($unset).length) update.$unset = $unset;
+
+    const doc =
+      Object.keys(update).length === 0
+        ? await this.findById(userId)
+        : await this.userModel
+            .findByIdAndUpdate(userId, update, { new: true, runValidators: true })
+            .lean<UserDocumentLean>()
+            .exec();
+    if (!doc) throw Errors.notFound('Usuario');
+    return doc;
+  }
+
+  /** Reemplaza la foto de perfil. Devuelve la anterior (para borrar sus objetos). */
+  async setAvatar(userId: string, avatar: Avatar): Promise<Avatar | null> {
+    const before = await this.userModel
+      .findByIdAndUpdate(userId, { $set: { avatar } }, { new: false, projection: { avatar: 1 } })
+      .lean<Pick<User, 'avatar'>>()
+      .exec();
+    if (!before) throw Errors.notFound('Usuario');
+    this.events.profileChanged(userId);
+    return before.avatar ?? null;
+  }
+
+  /** Quita la foto de perfil. Devuelve la anterior (para borrar sus objetos). */
+  async clearAvatar(userId: string): Promise<{ user: UserDocumentLean; previous: Avatar | null }> {
+    const before = await this.userModel
+      .findByIdAndUpdate(userId, { $set: { avatar: null } }, { new: false })
+      .lean<UserDocumentLean>()
+      .exec();
+    if (!before) throw Errors.notFound('Usuario');
+    if (before.avatar) this.events.profileChanged(userId);
+    return { user: { ...before, avatar: null }, previous: before.avatar ?? null };
   }
 
   /** Revocación/otorgamiento del consentimiento para finalidades secundarias (LFPDPPP). */

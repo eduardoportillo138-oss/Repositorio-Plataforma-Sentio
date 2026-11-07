@@ -29,7 +29,7 @@ Reglas de dependencia: `apps/*` puede importar `packages/*`; `packages/*` nunca 
 ```powershell
 Copy-Item .env.example .env      # rellena JWT_ACCESS_SECRET y JWT_REFRESH_SECRET
 pnpm install
-pnpm infra:up                    # MongoDB 7 (rs0) + Redis 7 con Docker
+pnpm infra:up                    # MongoDB 7 (rs0) + Redis 7 + MinIO (S3) con Docker
 pnpm dev                         # API :4000, web :3000 (compila core/realtime antes)
 pnpm dev:mobile                  # Expo (en otra terminal)
 ```
@@ -37,12 +37,14 @@ pnpm dev:mobile                  # Expo (en otra terminal)
 - API / GraphQL Playground: http://localhost:4000/graphql (`GRAPHQL_PLAYGROUND=true`)
 - Web: http://localhost:3000 (redirige a `/es` o `/en`)
 - Salud: http://localhost:4000/health
+- MinIO (consola): http://localhost:9001 (usuario y contraseña: `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`)
 
 ### Sin Docker
 
 ```powershell
 pnpm --filter @sentio/api db:memory   # MongoDB en memoria, rs0 en :27017 (datos efímeros)
-$env:QUEUES_ENABLED = 'false'          # sin Redis: desactiva BullMQ
+$env:QUEUES_ENABLED = 'false'          # sin Redis: desactiva BullMQ (los medios se procesan en línea)
+$env:STORAGE_DRIVER = 'memory'         # sin MinIO: la API guarda y sirve las fotos en memoria
 pnpm dev
 ```
 

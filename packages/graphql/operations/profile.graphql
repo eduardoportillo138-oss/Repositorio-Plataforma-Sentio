@@ -1,0 +1,53 @@
+# Perfil del estudiante: datos públicos, cualidades y contacto privado.
+
+fragment AvatarFields on Avatar {
+  assetId
+  url256
+  url512
+  blurhash
+}
+
+# Datos públicos: es lo único que se pide para perfiles de otras personas.
+fragment PublicUserFields on User {
+  id
+  handle
+  displayName
+  bio
+  tags
+  avatar {
+    ...AvatarFields
+  }
+}
+
+fragment PrivateContactFields on PrivateContact {
+  phone
+  altEmail
+  institution
+  studentId
+  emergencyContactName
+  emergencyContactPhone
+}
+
+query UserProfile($handle: String!) {
+  user(handle: $handle) {
+    ...PublicUserFields
+  }
+}
+
+query ProfileQualities {
+  profileQualities {
+    key
+  }
+}
+
+mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    ...ViewerFields
+  }
+}
+
+mutation UpdatePrivateContact($input: UpdatePrivateContactInput!) {
+  updatePrivateContact(input: $input) {
+    ...ViewerFields
+  }
+}

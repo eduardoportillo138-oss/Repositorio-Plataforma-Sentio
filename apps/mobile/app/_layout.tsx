@@ -21,7 +21,9 @@ export default function RootLayout() {
         <UIProvider colorScheme={colorScheme}>
           <SentioApiProvider uri={API_URL} platform="native" tokens={tokens}>
             <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }} />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="new-post" options={{ presentation: 'modal' }} />
+            </Stack>
           </SentioApiProvider>
         </UIProvider>
       </I18nextProvider>

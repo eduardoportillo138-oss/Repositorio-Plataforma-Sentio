@@ -13,6 +13,58 @@ type AuthPayload {
   user: User!
 }
 
+"""Foto de perfil procesada (WebP sin metadatos)."""
+type Avatar {
+  assetId: ID!
+
+  """Marcador de carga (https://blurha.sh)."""
+  blurhash: String!
+
+  """Variante cuadrada de 256 px."""
+  url256: String!
+
+  """Variante cuadrada de 512 px."""
+  url512: String!
+}
+
+"""Datos para subir el archivo con un PUT directo al almacenamiento."""
+type AvatarUploadTicket {
+  assetId: ID!
+  expiresAt: DateTime!
+
+  """Encabezados obligatorios del PUT."""
+  headers: [UploadHeader!]!
+
+  """URL prefirmada (PUT). Vence en 10 minutos."""
+  uploadUrl: String!
+}
+
+type Comment {
+  """Datos públicos del autor."""
+  author: PublicUser!
+  createdAt: DateTime!
+  id: ID!
+
+  """Post comentado (para actualizar contadores en la caché del cliente)."""
+  post: Post
+  text: String!
+
+  """
+  true si el usuario actual puede borrarlo (autor del comentario o del post).
+  """
+  viewerCanDelete: Boolean!
+}
+
+type CommentConnection {
+  edges: [CommentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CommentEdge {
+  cursor: String!
+  node: Comment!
+}
+
 """Consentimientos del titular (solo visibles para él)."""
 type Consents {
   marketingOptIn: Boolean!
@@ -30,6 +82,15 @@ input CreateGroupInput {
   joinPolicy: JoinPolicy
   name: String!
   visibility: GroupVisibility = PRIVATE
+}
+
+input CreatePostInput {
+  """Hasta 5000 caracteres."""
+  text: String
+
+  """De 1 a 120 caracteres."""
+  title: String!
+  visibility: PostVisibility = public
 }
 
 """
@@ -100,6 +161,22 @@ input LoginInput {
   password: String!
 }
 
+type MediaAsset {
+  """Variantes procesadas, cuando status = ready y purpose = avatar."""
+  avatar: Avatar
+  id: ID!
+  kind: String!
+  purpose: String!
+  status: MediaStatus!
+}
+
+enum MediaStatus {
+  failed
+  pending
+  processing
+  ready
+}
+
 enum MembershipStatus {
   ACTIVE
   BANNED
@@ -107,11 +184,37 @@ enum MembershipStatus {
 }
 
 type Mutation {
+  """Comenta una publicación (de 1 a 1000 caracteres)."""
+  addComment(postId: ID!, text: String!): Comment!
+
+  """Borra mi historial de búsquedas."""
+  clearSearchHistory: Boolean!
+
+  """
+  Paso 2: confirma la subida y la manda a procesar. Si las colas están activas el resultado llega por Socket.IO (media:ready); si no, se devuelve ya procesado.
+  """
+  confirmAvatarUpload(assetId: ID!): MediaAsset!
   createGroup(input: CreateGroupInput!): Group!
+
+  """Crea una publicación (máximo 10 por hora)."""
+  createPost(input: CreatePostInput!): Post!
+
+  """
+  Borra un comentario (su autor o el autor del post). Devuelve el post actualizado.
+  """
+  deleteComment(commentId: ID!): Post
+
+  """Borra (lógicamente) una publicación propia."""
+  deletePost(postId: ID!): ID!
   login(input: LoginInput!): AuthPayload!
 
   """Cierra la sesión actual o todas (allDevices)."""
   logout(allDevices: Boolean! = false): Boolean!
+
+  """
+  Marca como leídas las indicadas, o todas si no se indican. Devuelve cuántas.
+  """
+  markNotificationsRead(ids: [ID!]): Int!
 
   """
   Canjea un refresh token por un par nuevo. Si se omite `token`, se lee de la cookie.
@@ -119,11 +222,59 @@ type Mutation {
   refreshToken(token: String): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
 
+  """Quita la foto de perfil."""
+  removeAvatar: User!
+
+  """
+  Paso 1 de la foto de perfil: JPEG, PNG, WebP o HEIC de hasta 5 MB. Devuelve una URL prefirmada (PUT) válida 10 minutos.
+  """
+  requestAvatarUpload(mimeType: String!, sizeBytes: Int!): AvatarUploadTicket!
+
+  """
+  Comparte una publicación pública con hasta 10 personas (crea una notificación para cada una).
+  """
+  sharePost(message: String, postId: ID!, recipientIds: [ID!]!): SharePostResult!
+
+  """
+  Da o quita "Me gusta". Devuelve el post con contador y viewerHasLiked al día.
+  """
+  toggleLike(postId: ID!): Post!
+
   """
   Otorga o revoca el consentimiento para finalidades secundarias (marketing).
   """
   updateMarketingConsent(optIn: Boolean!): User!
+
+  """Actualiza los datos de contacto privados."""
+  updatePrivateContact(input: UpdatePrivateContactInput!): User!
+
+  """Actualiza nombre, biografía y cualidades."""
   updateProfile(input: UpdateProfileInput!): User!
+}
+
+type Notification {
+  """Quién la originó."""
+  actor: PublicUser
+  createdAt: DateTime!
+  id: ID!
+  message: String
+
+  """Publicación relacionada, si existe y el usuario la puede ver."""
+  post: Post
+  readAt: DateTime
+
+  """share, comment, reaction…"""
+  type: String!
+}
+
+type NotificationConnection {
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type NotificationEdge {
+  cursor: String!
+  node: Notification!
 }
 
 type PageInfo {
@@ -133,6 +284,83 @@ type PageInfo {
   startCursor: String
 }
 
+type Post {
+  """Datos públicos actuales del autor (nunca datos privados)."""
+  author: PublicUser!
+  counts: PostCounts!
+  createdAt: DateTime!
+  id: ID!
+  text: String!
+  title: String!
+
+  """true si el usuario actual le dio Me gusta (en lote por página)."""
+  viewerHasLiked: Boolean!
+
+  """true si el usuario actual es el autor."""
+  viewerIsAuthor: Boolean!
+  visibility: PostVisibility!
+}
+
+type PostConnection {
+  edges: [PostEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PostCounts {
+  comments: Int!
+  reactions: Int!
+  shares: Int!
+}
+
+type PostEdge {
+  cursor: String!
+  node: Post!
+}
+
+enum PostVisibility {
+  """Solo sus seguidores (y el autor)."""
+  followers
+
+  """Cualquier persona con sesión iniciada."""
+  public
+}
+
+"""Datos de contacto privados del estudiante."""
+type PrivateContact {
+  altEmail: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+  institution: String
+  phone: String
+  studentId: String
+}
+
+"""
+Cualidad del catálogo. El texto visible se traduce en el cliente con su clave.
+"""
+type ProfileQuality {
+  key: String!
+}
+
+type PublicUser {
+  avatar: Avatar
+  bio: String
+  displayName: String!
+  handle: String!
+  id: ID!
+  tags: [String!]!
+}
+
+type PublicUserConnection {
+  edges: [PublicUserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PublicUserEdge {
+  cursor: String!
+  node: PublicUser!
+}
+
 type Query {
   """
   Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, para no revelar la existencia de grupos privados).
@@ -140,11 +368,55 @@ type Query {
   group(id: ID!): Group
   groupMembers(after: String, first: Int = 20, groupId: ID!): GroupMemberConnection!
 
+  """Inicio: publicaciones públicas, de la más reciente a la más antigua."""
+  homeFeed(after: String, first: Int = 20): PostConnection!
+
   """Usuario autenticado."""
   me: User!
 
+  """Mis notificaciones, de la más reciente a la más antigua."""
+  notifications(after: String, first: Int = 20): NotificationConnection!
+
+  """Detalle de una publicación. null si no existe o no se puede ver."""
+  post(id: ID!): Post
+
+  """Comentarios de primer nivel, del más antiguo al más reciente."""
+  postComments(after: String, first: Int = 20, postId: ID!): CommentConnection!
+
+  """
+  Catálogo de cualidades para las etiquetas del perfil (el cliente las traduce).
+  """
+  profileQualities: [ProfileQuality!]!
+
+  """Mis búsquedas recientes (las últimas 10)."""
+  recentSearches(first: Int = 10): [RecentSearch!]!
+
+  """
+  Busca en el título y la descripción de publicaciones públicas y activas (de 2 a 80 caracteres).
+  """
+  searchPosts(after: String, first: Int = 20, query: String!): PostConnection!
+
+  """
+  Busca personas por nombre o @handle (de 2 a 80 caracteres). Solo datos públicos.
+  """
+  searchUsers(after: String, first: Int = 20, query: String!): PublicUserConnection!
+
+  """Cuántas notificaciones sin leer tengo."""
+  unreadNotificationsCount: Int!
+
   """Perfil público por handle."""
   user(handle: String!): User
+
+  """Publicaciones de un perfil."""
+  userPosts(after: String, first: Int = 20, handle: String!): PostConnection!
+}
+
+type RecentSearch {
+  id: ID!
+  query: String!
+
+  """Última vez que se buscó."""
+  searchedAt: DateTime!
 }
 
 input RegisterInput {
@@ -164,14 +436,43 @@ input RegisterInput {
   password: String!
 }
 
+type SharePostResult {
+  """El post con counts.shares actualizado."""
+  post: Post!
+
+  """A cuántas personas se envió."""
+  sentTo: Int!
+}
+
+input UpdatePrivateContactInput {
+  altEmail: String
+  emergencyContactName: String
+
+  """Formato E.164."""
+  emergencyContactPhone: String
+  institution: String
+
+  """Formato E.164, p. ej. +525512345678."""
+  phone: String
+  studentId: String
+}
+
 input UpdateProfileInput {
-  avatarUrl: String
+  """Hasta 300 caracteres; null la borra."""
   bio: String
   displayName: String
+
+  """Hasta 3 claves de profileQualities, sin repetir."""
+  tags: [String!]
+}
+
+type UploadHeader {
+  name: String!
+  value: String!
 }
 
 type User {
-  avatarUrl: String
+  avatar: Avatar
   bio: String
 
   """Solo visible para el propio usuario."""
@@ -183,4 +484,10 @@ type User {
   email: String
   handle: String!
   id: ID!
+
+  """Solo visible para el propio usuario; para cualquier otro es null."""
+  privateContact: PrivateContact
+
+  """Claves de cualidades (máximo 3)."""
+  tags: [String!]!
 }

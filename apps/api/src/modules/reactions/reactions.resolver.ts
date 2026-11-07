@@ -1,8 +1,23 @@
-import { Resolver } from '@nestjs/graphql';
+import { Args, ID, Mutation, Resolver } from '@nestjs/graphql';
+import { objectIdSchema } from '@sentio/core';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { type AuthUser } from '../../common/graphql/context';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { PostModel, toPostModel } from '../posts/dto/post.dto';
+import { ReactionsService } from './reactions.service';
 
-/**
- * Esqueleto (Etapa 0). Las queries y mutaciones se agregan en la Etapa 1:
- * reaccionar / quitar reacción de forma idempotente y actualizar contadores.
- */
 @Resolver()
-export class ReactionsResolver {}
+export class ReactionsResolver {
+  constructor(private readonly reactions: ReactionsService) {}
+
+  @Mutation(() => PostModel, {
+    description: 'Da o quita "Me gusta". Devuelve el post con contador y viewerHasLiked al día.',
+  })
+  async toggleLike(
+    @CurrentUser() viewer: AuthUser,
+    @Args('postId', { type: () => ID }, new ZodValidationPipe(objectIdSchema)) postId: string,
+  ): Promise<PostModel> {
+    const { post } = await this.reactions.toggleLike(viewer.userId, postId);
+    return toPostModel(post);
+  }
+}

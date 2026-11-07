@@ -27,5 +27,7 @@ export default async function globalSetup(): Promise<void> {
     PRIVACY_NOTICE_VERSION: 'test-1',
     RATE_LIMIT_AUTH_MAX: '1000',
     RATE_LIMIT_DEFAULT_MAX: '1000',
+    STORAGE_DRIVER: 'memory',
+    API_PUBLIC_URL: 'http://localhost:4000',
   });
 }
