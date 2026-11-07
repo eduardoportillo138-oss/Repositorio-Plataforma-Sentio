@@ -26,6 +26,7 @@ import {
   type RegisterMutationVariables,
   type ViewerFieldsFragment,
 } from './generated/graphql';
+import { RealtimeProvider, realtimeUrlFrom } from './realtime-provider';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
 
@@ -44,13 +45,15 @@ export type SentioApiProviderProps = Omit<
   'onSessionExpired' | 'onTokensRefreshed'
 > & {
   children: ReactNode;
+  /** URL base de Socket.IO. Por defecto se deriva de `uri` (sin `/graphql`). */
+  realtimeUrl?: string;
 };
 
 /**
  * Crea el Apollo Client y gestiona la sesión. Al montar intenta restaurarla con el refresh token
  * (cookie en web, almacenamiento seguro en móvil).
  */
-export function SentioApiProvider({ children, ...options }: SentioApiProviderProps) {
+export function SentioApiProvider({ children, realtimeUrl, ...options }: SentioApiProviderProps) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [viewer, setViewer] = useState<ViewerFieldsFragment | null>(null);
 
@@ -131,7 +134,15 @@ export function SentioApiProvider({ children, ...options }: SentioApiProviderPro
 
   return (
     <ApolloProvider client={client}>
-      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+      <AuthContext.Provider value={value}>
+        <RealtimeProvider
+          url={realtimeUrl ?? realtimeUrlFrom(options.uri)}
+          tokens={options.tokens}
+          enabled={status === 'authenticated'}
+        >
+          {children}
+        </RealtimeProvider>
+      </AuthContext.Provider>
     </ApolloProvider>
   );
 }

@@ -1,0 +1,29 @@
+# Foto de perfil: pedir URL prefirmada → PUT directo al almacenamiento → confirmar.
+
+mutation RequestAvatarUpload($mimeType: String!, $sizeBytes: Int!) {
+  requestAvatarUpload(mimeType: $mimeType, sizeBytes: $sizeBytes) {
+    assetId
+    uploadUrl
+    expiresAt
+    headers {
+      name
+      value
+    }
+  }
+}
+
+mutation ConfirmAvatarUpload($assetId: ID!) {
+  confirmAvatarUpload(assetId: $assetId) {
+    id
+    status
+    avatar {
+      ...AvatarFields
+    }
+  }
+}
+
+mutation RemoveAvatar {
+  removeAvatar {
+    ...ViewerFields
+  }
+}

@@ -13,6 +13,32 @@ type AuthPayload {
   user: User!
 }
 
+"""Foto de perfil procesada (WebP sin metadatos)."""
+type Avatar {
+  assetId: ID!
+
+  """Marcador de carga (https://blurha.sh)."""
+  blurhash: String!
+
+  """Variante cuadrada de 256 px."""
+  url256: String!
+
+  """Variante cuadrada de 512 px."""
+  url512: String!
+}
+
+"""Datos para subir el archivo con un PUT directo al almacenamiento."""
+type AvatarUploadTicket {
+  assetId: ID!
+  expiresAt: DateTime!
+
+  """Encabezados obligatorios del PUT."""
+  headers: [UploadHeader!]!
+
+  """URL prefirmada (PUT). Vence en 10 minutos."""
+  uploadUrl: String!
+}
+
 """Consentimientos del titular (solo visibles para él)."""
 type Consents {
   marketingOptIn: Boolean!
@@ -100,6 +126,22 @@ input LoginInput {
   password: String!
 }
 
+type MediaAsset {
+  """Variantes procesadas, cuando status = ready y purpose = avatar."""
+  avatar: Avatar
+  id: ID!
+  kind: String!
+  purpose: String!
+  status: MediaStatus!
+}
+
+enum MediaStatus {
+  failed
+  pending
+  processing
+  ready
+}
+
 enum MembershipStatus {
   ACTIVE
   BANNED
@@ -107,6 +149,10 @@ enum MembershipStatus {
 }
 
 type Mutation {
+  """
+  Paso 2: confirma la subida y la manda a procesar. Si las colas están activas el resultado llega por Socket.IO (media:ready); si no, se devuelve ya procesado.
+  """
+  confirmAvatarUpload(assetId: ID!): MediaAsset!
   createGroup(input: CreateGroupInput!): Group!
   login(input: LoginInput!): AuthPayload!
 
@@ -119,10 +165,23 @@ type Mutation {
   refreshToken(token: String): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
 
+  """Quita la foto de perfil."""
+  removeAvatar: User!
+
+  """
+  Paso 1 de la foto de perfil: JPEG, PNG, WebP o HEIC de hasta 5 MB. Devuelve una URL prefirmada (PUT) válida 10 minutos.
+  """
+  requestAvatarUpload(mimeType: String!, sizeBytes: Int!): AvatarUploadTicket!
+
   """
   Otorga o revoca el consentimiento para finalidades secundarias (marketing).
   """
   updateMarketingConsent(optIn: Boolean!): User!
+
+  """Actualiza los datos de contacto privados."""
+  updatePrivateContact(input: UpdatePrivateContactInput!): User!
+
+  """Actualiza nombre, biografía y cualidades."""
   updateProfile(input: UpdateProfileInput!): User!
 }
 
@@ -131,6 +190,23 @@ type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
   startCursor: String
+}
+
+"""Datos de contacto privados del estudiante."""
+type PrivateContact {
+  altEmail: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+  institution: String
+  phone: String
+  studentId: String
+}
+
+"""
+Cualidad del catálogo. El texto visible se traduce en el cliente con su clave.
+"""
+type ProfileQuality {
+  key: String!
 }
 
 type Query {
@@ -142,6 +218,11 @@ type Query {
 
   """Usuario autenticado."""
   me: User!
+
+  """
+  Catálogo de cualidades para las etiquetas del perfil (el cliente las traduce).
+  """
+  profileQualities: [ProfileQuality!]!
 
   """Perfil público por handle."""
   user(handle: String!): User
@@ -164,14 +245,35 @@ input RegisterInput {
   password: String!
 }
 
+input UpdatePrivateContactInput {
+  altEmail: String
+  emergencyContactName: String
+
+  """Formato E.164."""
+  emergencyContactPhone: String
+  institution: String
+
+  """Formato E.164, p. ej. +525512345678."""
+  phone: String
+  studentId: String
+}
+
 input UpdateProfileInput {
-  avatarUrl: String
+  """Hasta 300 caracteres; null la borra."""
   bio: String
   displayName: String
+
+  """Hasta 3 claves de profileQualities, sin repetir."""
+  tags: [String!]
+}
+
+type UploadHeader {
+  name: String!
+  value: String!
 }
 
 type User {
-  avatarUrl: String
+  avatar: Avatar
   bio: String
 
   """Solo visible para el propio usuario."""
@@ -183,4 +285,10 @@ type User {
   email: String
   handle: String!
   id: ID!
+
+  """Solo visible para el propio usuario; para cualquier otro es null."""
+  privateContact: PrivateContact
+
+  """Claves de cualidades (máximo 3)."""
+  tags: [String!]!
 }

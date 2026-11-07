@@ -17,6 +17,20 @@ export interface FeedFanoutJob {
   authorId: string;
 }
 
-export interface MediaJob {
+/** Nombres de job de la cola `media`. */
+export const MediaJobName = {
+  /** Genera las variantes de una foto de perfil subida. */
+  PROCESS_AVATAR: 'process-avatar',
+  /** Borra objetos del almacenamiento (fotos reemplazadas o quitadas). */
+  DELETE_OBJECTS: 'delete-objects',
+} as const;
+
+export interface ProcessAvatarJob {
   mediaId: string;
 }
+
+export interface DeleteObjectsJob {
+  keys: string[];
+}
+
+export type MediaJob = ProcessAvatarJob | DeleteObjectsJob;

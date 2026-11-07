@@ -10,10 +10,11 @@ import { lexicographicSortSchema, printSchema } from 'graphql';
 import { SCHEMA_FILE } from '../common/graphql/graphql.options';
 import { AuthResolver } from '../modules/auth/auth.resolver';
 import { GroupMemberResolver, GroupsResolver } from '../modules/groups/groups.resolver';
+import { MediaResolver } from '../modules/media/media.resolver';
 import { UsersResolver } from '../modules/users/users.resolver';
 
-/** Resolvers que aportan campos al schema. Añade aquí los nuevos en la Etapa 1. */
-const RESOLVERS = [AuthResolver, UsersResolver, GroupsResolver, GroupMemberResolver];
+/** Resolvers que aportan campos al schema. Cada resolver nuevo debe agregarse aquí. */
+const RESOLVERS = [AuthResolver, UsersResolver, MediaResolver, GroupsResolver, GroupMemberResolver];
 
 async function main(): Promise<void> {
   const app = await NestFactory.create(GraphQLSchemaBuilderModule, { logger: ['error'] });

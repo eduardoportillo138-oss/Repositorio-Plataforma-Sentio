@@ -1,3 +1,5 @@
+import { type ProfileQuality } from '@sentio/core';
+
 /** Español (idioma por defecto). Es la fuente de verdad de las claves. */
 export const es = {
   common: {
@@ -67,11 +69,66 @@ export const es = {
         body: 'Pronto podrás buscar personas y publicaciones.',
       },
     },
-    profile: {
-      empty: {
-        title: '@{{handle}}',
-        body: 'Aquí podrás editar tu foto, tu biografía y tus etiquetas.',
-      },
+  },
+  profile: {
+    qualities: {
+      empathetic: 'Empático',
+      creative: 'Creativo',
+      curious: 'Curioso',
+      organized: 'Organizado',
+      sociable: 'Sociable',
+      resilient: 'Resiliente',
+      calm: 'Tranquilo',
+      supportive: 'Solidario',
+      analytical: 'Analítico',
+      optimistic: 'Optimista',
+    },
+    view: {
+      noBio: 'Todavía no hay biografía.',
+      noTags: 'Sin cualidades elegidas.',
+      edit: 'Editar perfil',
+      privateInfo: 'Información privada',
+      notFound: 'No encontramos a este usuario.',
+      back: 'Volver',
+    },
+    edit: {
+      title: 'Editar perfil',
+      displayName: 'Nombre',
+      bio: 'Biografía',
+      bioPlaceholder: 'Cuéntale a la comunidad sobre ti.',
+      bioCounter: '{{length}}/{{max}}',
+      tags: 'Cualidades',
+      tagsHint: 'Elige las que mejor te describen.',
+      tagsLimit: 'Puedes elegir hasta 3',
+      save: 'Guardar cambios',
+      saved: 'Cambios guardados.',
+      cancel: 'Cancelar',
+    },
+    avatar: {
+      change: 'Cambiar foto',
+      choose: 'Elegir foto',
+      remove: 'Quitar foto',
+      uploading: 'Subiendo foto…',
+      processing: 'Procesando foto…',
+      ready: 'Foto actualizada.',
+      removed: 'Foto eliminada.',
+      failed: 'No pudimos procesar la foto. Prueba con otra imagen JPG, PNG o WebP.',
+      permissionDenied: 'Necesitamos permiso para acceder a tus fotos.',
+      preview: 'Vista previa',
+      alt: 'Foto de perfil de {{name}}',
+    },
+    private: {
+      title: 'Información privada',
+      notice: 'Solo tú puedes ver esta información',
+      phone: 'Teléfono',
+      phoneHint: 'Con lada internacional, p. ej. +525512345678.',
+      altEmail: 'Correo alterno',
+      institution: 'Institución',
+      studentId: 'Matrícula',
+      emergencyContactName: 'Contacto de emergencia',
+      emergencyContactPhone: 'Teléfono de emergencia',
+      save: 'Guardar',
+      saved: 'Información guardada.',
     },
   },
   errors: {
@@ -84,6 +141,7 @@ export const es = {
     BAD_USER_INPUT: 'Revisa los datos del formulario.',
     FORBIDDEN: 'No tienes permiso para hacer esto.',
     FORBIDDEN_GROUP: 'No tienes acceso a este grupo.',
+    NOT_FOUND: 'No encontramos lo que buscas.',
     REFRESH_TOKEN_REUSED: 'Cerramos tu sesión por seguridad. Inicia sesión de nuevo.',
     network: 'No pudimos conectar con el servidor. Revisa tu conexión.',
     unknown: 'Algo salió mal. Inténtalo de nuevo.',
@@ -99,7 +157,22 @@ export const es = {
     },
     handle: { format: 'Usa de 3 a 30 letras minúsculas, números o guion bajo.' },
     displayName: { required: 'Escribe tu nombre.', max: 'Máximo 60 caracteres.' },
-    bio: { max: 'Máximo 280 caracteres.' },
+    bio: { max: 'Máximo 300 caracteres.' },
+    tags: {
+      max: 'Puedes elegir hasta 3',
+      unknown: 'Esa cualidad no existe.',
+      duplicate: 'No repitas cualidades.',
+    },
+    phone: { format: 'Usa el formato internacional, p. ej. +525512345678.' },
+    institution: { max: 'Máximo 120 caracteres.' },
+    studentId: { max: 'Máximo 40 caracteres.' },
+    emergencyContactName: { max: 'Máximo 80 caracteres.' },
+    avatar: {
+      type: 'Usa una imagen JPG, PNG, WebP o HEIC.',
+      size: 'La imagen debe pesar 5 MB o menos.',
+      empty: 'El archivo está vacío.',
+    },
+    id: 'Identificador inválido.',
     url: { invalid: 'Escribe una URL válida.' },
     privacy: { required: 'Debes aceptar el Aviso de Privacidad para crear tu cuenta.' },
   },
@@ -109,3 +182,6 @@ type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
 
 /** Forma que debe cumplir cada idioma (mismas claves que `es`). */
 export type Messages = Widen<typeof es>;
+
+/** Garantiza que cada cualidad del catálogo de @sentio/core tenga traducción. */
+export const qualityLabelsAreComplete: Record<ProfileQuality, string> = es.profile.qualities;

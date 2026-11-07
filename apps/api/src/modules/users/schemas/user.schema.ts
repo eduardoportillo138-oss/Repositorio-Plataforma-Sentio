@@ -1,6 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { type Locale, supportedLocales } from '@sentio/core';
-import { type HydratedDocument, type Types } from 'mongoose';
+import {
+  BIO_MAX_LENGTH,
+  type Locale,
+  MAX_PROFILE_TAGS,
+  PROFILE_QUALITIES,
+  type ProfileQuality,
+  supportedLocales,
+} from '@sentio/core';
+import { type HydratedDocument, Types } from 'mongoose';
 
 export const USER_STATUSES = ['active', 'suspended', 'deleted'] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
@@ -31,6 +38,49 @@ export class Consents {
 }
 const ConsentsSchema = SchemaFactory.createForClass(Consents);
 
+/** Foto de perfil procesada (variantes WebP públicas + blurhash para el marcador). */
+@Schema({ _id: false })
+export class Avatar {
+  @Prop({ type: Types.ObjectId, required: true })
+  assetId!: Types.ObjectId;
+
+  @Prop({ required: true })
+  url256!: string;
+
+  @Prop({ required: true })
+  url512!: string;
+
+  @Prop({ required: true })
+  blurhash!: string;
+}
+const AvatarSchema = SchemaFactory.createForClass(Avatar);
+
+/**
+ * Datos de contacto privados: solo los ve el propio usuario. Nunca se exponen en búsquedas,
+ * en el feed ni como datos del autor de un post.
+ */
+@Schema({ _id: false })
+export class PrivateContact {
+  @Prop({ type: String })
+  phone?: string;
+
+  @Prop({ type: String })
+  altEmail?: string;
+
+  @Prop({ type: String })
+  institution?: string;
+
+  @Prop({ type: String })
+  studentId?: string;
+
+  @Prop({ type: String })
+  emergencyContactName?: string;
+
+  @Prop({ type: String })
+  emergencyContactPhone?: string;
+}
+const PrivateContactSchema = SchemaFactory.createForClass(PrivateContact);
+
 @Schema({ collection: 'users', timestamps: true })
 export class User {
   _id!: Types.ObjectId;
@@ -44,11 +94,24 @@ export class User {
   @Prop({ required: true, trim: true })
   displayName!: string;
 
-  @Prop({ type: String, default: null })
-  avatarUrl!: string | null;
+  @Prop({ type: AvatarSchema, default: null })
+  avatar!: Avatar | null;
 
-  @Prop({ type: String, default: null })
+  @Prop({ type: String, default: null, maxlength: BIO_MAX_LENGTH })
   bio!: string | null;
+
+  @Prop({
+    type: [{ type: String, enum: PROFILE_QUALITIES }],
+    default: [],
+    validate: {
+      validator: (v: string[]) => v.length <= MAX_PROFILE_TAGS && new Set(v).size === v.length,
+      message: `Máximo ${MAX_PROFILE_TAGS} cualidades distintas.`,
+    },
+  })
+  tags!: ProfileQuality[];
+
+  @Prop({ type: PrivateContactSchema, default: () => ({}) })
+  privateContact!: PrivateContact;
 
   /** Hash Argon2id. Nunca se selecciona por defecto. */
   @Prop({ required: true, select: false })

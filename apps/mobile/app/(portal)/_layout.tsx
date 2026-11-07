@@ -80,6 +80,8 @@ export default function PortalLayout() {
       {TABS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} />
       ))}
+      {/* Perfil público de otra persona: ruta del portal sin pestaña propia. */}
+      <Tabs.Screen name="u/[handle]" options={{ href: null }} />
     </Tabs>
   );
 }

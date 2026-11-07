@@ -45,7 +45,22 @@ export interface SessionRevokedEvent {
   reason: 'logout' | 'logout_all' | 'reuse_detected' | 'admin';
 }
 
+/** Una foto subida terminó de procesarse (variantes listas). */
+export interface MediaReadyEvent {
+  assetId: string;
+  purpose: 'avatar';
+  avatar: { assetId: string; url256: string; url512: string; blurhash: string };
+}
+
+/** El procesamiento de una foto falló (formato no compatible, archivo dañado…). */
+export interface MediaFailedEvent {
+  assetId: string;
+  purpose: 'avatar';
+}
+
 export interface ServerToClientEvents {
+  'media:ready': (event: MediaReadyEvent) => void;
+  'media:failed': (event: MediaFailedEvent) => void;
   'notification:created': (event: NotificationCreatedEvent) => void;
   'chat:message': (event: ChatMessageEvent) => void;
   'chat:typing': (event: TypingEvent) => void;
