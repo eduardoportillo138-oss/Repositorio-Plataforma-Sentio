@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { type CreatePostData } from '@sentio/core';
-import { type FilterQuery, Model, Types } from 'mongoose';
+import { type ClientSession, type FilterQuery, Model, Types } from 'mongoose';
 import { Errors } from '../../common/errors/app-error';
 import { type Connection } from '../../common/pagination/connection.type';
 import { paginate } from '../../common/pagination/paginate';
@@ -28,6 +28,12 @@ export function authorSnapshot(user: UserDocumentLean): PostAuthor {
   };
 }
 
+export function isVisibleTo(post: Post, viewerId: string | null): boolean {
+  if (post.status !== 'active') return false;
+  if (viewerId !== null && post.authorId.equals(viewerId)) return true;
+  return post.visibility === 'public' && post.groupId === null;
+}
+
 @Injectable()
 export class PostsService {
   constructor(
@@ -38,6 +44,42 @@ export class PostsService {
   async findById(id: string): Promise<Post | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.model.findById(id).lean<Post>().exec();
+  }
+
+  async findByIds(ids: readonly string[]): Promise<Post[]> {
+    const valid = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+    if (valid.length === 0) return [];
+    return this.model
+      .find({ _id: { $in: valid } })
+      .lean<Post[]>()
+      .exec();
+  }
+
+  /**
+   * Única regla de visibilidad de un post para interacciones y detalle: activo y público,
+   * o del propio usuario. Los posts de grupo no se exponen por aquí.
+   * Devuelve null tanto si no existe como si no se puede ver (no revela su existencia).
+   */
+  async findVisible(postId: string, viewerId: string): Promise<Post | null> {
+    const post = await this.findById(postId);
+    return post && isVisibleTo(post, viewerId) ? post : null;
+  }
+
+  /** Suma (o resta) contadores. Pensado para usarse dentro de una transacción. */
+  async incrementCounts(
+    postId: Types.ObjectId | string,
+    delta: Partial<Record<'reactions' | 'comments' | 'shares', number>>,
+    session?: ClientSession,
+  ): Promise<void> {
+    const $inc = Object.fromEntries(
+      Object.entries(delta)
+        .filter(([, v]) => v)
+        .map(([k, v]) => [`counts.${k}`, v]),
+    );
+    if (Object.keys($inc).length === 0) return;
+    await this.model.updateOne({ _id: postId }, { $inc }, { session }).exec();
   }
 
   async create(authorId: string, input: CreatePostData): Promise<PostModel> {

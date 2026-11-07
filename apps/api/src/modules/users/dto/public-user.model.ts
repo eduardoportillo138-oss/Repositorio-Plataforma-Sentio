@@ -1,4 +1,5 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Paginated } from '../../../common/pagination/connection.type';
 import { type UserDocumentLean } from '../schemas/user.schema';
 import { AvatarModel } from './user.model';
 
@@ -27,6 +28,9 @@ export class PublicUserModel {
   @Field(() => [String])
   tags!: string[];
 }
+
+@ObjectType()
+export class PublicUserConnection extends Paginated(PublicUserModel, 'PublicUser') {}
 
 export function toPublicUser(doc: UserDocumentLean): PublicUserModel {
   return {

@@ -10,6 +10,7 @@ const env = {
   apiUrl: process.env.EXPO_PUBLIC_API_URL as string | undefined,
   privacyNoticeUrl: process.env.EXPO_PUBLIC_PRIVACY_NOTICE_URL as string | undefined,
   arcoContactEmail: process.env.EXPO_PUBLIC_ARCO_CONTACT_EMAIL as string | undefined,
+  webUrl: process.env.EXPO_PUBLIC_WEB_URL as string | undefined,
 };
 
 /**
@@ -33,3 +34,5 @@ export const API_URL = resolveApiUrl();
 export const PRIVACY_NOTICE_URL =
   env.privacyNoticeUrl ?? 'http://localhost:3000/es/aviso-de-privacidad';
 export const PRIVACY_CONTACT = env.arcoContactEmail ?? 'privacidad@example.com';
+/** URL pública de la web, para los enlaces "Compartir fuera de la app". */
+export const WEB_URL = env.webUrl ?? 'http://localhost:3000';

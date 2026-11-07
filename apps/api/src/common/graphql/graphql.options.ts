@@ -39,7 +39,7 @@ export function buildGraphqlOptions(
     context: ({ req, res }: Pick<GqlContext, 'req' | 'res'>): GqlContext => ({
       req,
       res,
-      loaders: dataloaders.createLoaders(),
+      loaders: dataloaders.createLoaders(req),
     }),
     formatError: (formatted: GraphQLFormattedError): GraphQLFormattedError => {
       const code = formatted.extensions?.code;

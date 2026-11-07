@@ -6,10 +6,13 @@ describe('TokensService', () => {
   const user = { userId: '65f000000000000000000001', sessionId: '65f000000000000000000002' };
 
   it('firma un access token de 15 minutos y lo verifica', async () => {
+    // Se acota entre el antes y el después de firmar: con las suites en paralelo la firma
+    // puede tardar más de unos milisegundos y un margen fijo hacía la prueba intermitente.
     const before = Date.now();
     const { token, expiresAt } = await tokens.signAccessToken(user);
-    expect(expiresAt.getTime() - before).toBeGreaterThanOrEqual(900_000 - 50);
-    expect(expiresAt.getTime() - before).toBeLessThanOrEqual(900_000 + 50);
+    const after = Date.now();
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + 900_000);
+    expect(expiresAt.getTime()).toBeLessThanOrEqual(after + 900_000);
     await expect(tokens.verifyAccessToken(token)).resolves.toEqual(user);
   });
 

@@ -9,9 +9,14 @@ import { GraphQLSchemaBuilderModule, GraphQLSchemaFactory } from '@nestjs/graphq
 import { lexicographicSortSchema, printSchema } from 'graphql';
 import { SCHEMA_FILE } from '../common/graphql/graphql.options';
 import { AuthResolver } from '../modules/auth/auth.resolver';
+import { CommentsResolver } from '../modules/comments/comments.resolver';
 import { GroupMemberResolver, GroupsResolver } from '../modules/groups/groups.resolver';
 import { MediaResolver } from '../modules/media/media.resolver';
+import { NotificationsResolver } from '../modules/notifications/notifications.resolver';
 import { PostsResolver } from '../modules/posts/posts.resolver';
+import { ReactionsResolver } from '../modules/reactions/reactions.resolver';
+import { SearchResolver } from '../modules/search/search.resolver';
+import { SharesResolver } from '../modules/shares/shares.resolver';
 import { UsersResolver } from '../modules/users/users.resolver';
 
 /** Resolvers que aportan campos al schema. Cada resolver nuevo debe agregarse aquí. */
@@ -20,6 +25,11 @@ const RESOLVERS = [
   UsersResolver,
   MediaResolver,
   PostsResolver,
+  ReactionsResolver,
+  CommentsResolver,
+  SharesResolver,
+  NotificationsResolver,
+  SearchResolver,
   GroupsResolver,
   GroupMemberResolver,
 ];

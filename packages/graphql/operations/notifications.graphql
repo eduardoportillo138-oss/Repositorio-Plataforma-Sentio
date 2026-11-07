@@ -1,0 +1,39 @@
+# Notificaciones del usuario actual.
+
+fragment NotificationFields on Notification {
+  id
+  type
+  message
+  readAt
+  createdAt
+  actor {
+    ...PostAuthorFields
+  }
+  post {
+    id
+    title
+  }
+}
+
+query Notifications($first: Int = 20, $after: String) {
+  notifications(first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...NotificationFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query UnreadNotificationsCount {
+  unreadNotificationsCount
+}
+
+mutation MarkNotificationsRead($ids: [ID!]) {
+  markNotificationsRead(ids: $ids)
+}

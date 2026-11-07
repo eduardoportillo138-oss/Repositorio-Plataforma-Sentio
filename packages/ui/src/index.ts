@@ -20,6 +20,17 @@ export { Notice, type NoticeProps } from './components/Notice';
 export { PageContainer, type PageContainerProps } from './components/PageContainer';
 export { PostCard, PostCardSkeleton, type PostCardProps } from './components/PostCard';
 export { ErrorState, type ErrorStateProps } from './components/ErrorState';
+export { PostActions, type PostActionsProps } from './components/PostActions';
+export { CommentItem, type CommentItemProps } from './components/CommentItem';
+export { CommentComposer, type CommentComposerProps } from './components/CommentComposer';
+export { UserRow, type UserRowProps } from './components/UserRow';
+export {
+  Badge,
+  BellButton,
+  type BellButtonProps,
+  NotificationItem,
+  type NotificationItemProps,
+} from './components/Notifications';
 export {
   FloatingActionButton,
   type FloatingActionButtonProps,
@@ -31,7 +42,10 @@ export {
 } from './components/PostComposer';
 export {
   BackIcon,
+  BellIcon,
   CameraIcon,
+  CloseIcon,
+  LinkIcon,
   EditIcon,
   HomeIcon,
   LockIcon,
@@ -42,4 +56,16 @@ export {
   SearchIcon,
   TrashIcon,
 } from './icons';
-export { Anchor, H3, Label, Paragraph, Separator, Spinner, Text, XStack, YStack } from 'tamagui';
+export {
+  Anchor,
+  H3,
+  H4,
+  Input,
+  Label,
+  Paragraph,
+  Separator,
+  Spinner,
+  Text,
+  XStack,
+  YStack,
+} from 'tamagui';

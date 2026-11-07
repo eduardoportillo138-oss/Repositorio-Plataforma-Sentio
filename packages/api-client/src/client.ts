@@ -136,6 +136,9 @@ export function createCache(): InMemoryCache {
         fields: {
           homeFeed: relayStylePagination([]),
           userPosts: relayStylePagination(['handle']),
+          postComments: relayStylePagination(['postId']),
+          notifications: relayStylePagination([]),
+          searchUsers: relayStylePagination(['query']),
         },
       },
     },

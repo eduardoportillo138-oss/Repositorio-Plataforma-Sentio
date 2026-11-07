@@ -1,18 +1,28 @@
-import { type PostFieldsFragment, useDeletePost } from '@sentio/api-client';
+import { type PostFieldsFragment, useDeletePost, useToggleLike } from '@sentio/api-client';
 import { useRelativeTime, useTranslation } from '@sentio/i18n';
-import { Button, PostCard, TrashIcon } from '@sentio/ui';
+import { Button, PostActions, PostCard, TrashIcon } from '@sentio/ui';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Alert } from 'react-native';
+import { usePostInteractions } from './PostInteractions';
 import { UserAvatar } from './UserAvatar';
 
-/** PostCard con avatar nativo, enlace al autor y borrado (con confirmación) si es propia. */
-export const PostItem = memo(function PostItem({ post }: { post: PostFieldsFragment }) {
+export interface PostItemProps {
+  post: PostFieldsFragment;
+  /** En el detalle los comentarios ya están en pantalla y no se "abre" el post. */
+  detail?: boolean;
+}
+
+/** PostCard con avatar nativo, acciones (Me gusta, comentar, compartir), enlace al autor y borrado. */
+export const PostItem = memo(function PostItem({ post, detail = false }: PostItemProps) {
   const { t } = useTranslation();
   const relative = useRelativeTime();
   const router = useRouter();
   const { remove, deleting } = useDeletePost();
+  const { toggle } = useToggleLike();
+  const { openComments, openShare } = usePostInteractions();
   const { author } = post;
+  const target = { id: post.id, title: post.title };
 
   const confirmDelete = () =>
     Alert.alert(t('post.delete'), t('post.deleteConfirm'), [
@@ -20,7 +30,10 @@ export const PostItem = memo(function PostItem({ post }: { post: PostFieldsFragm
       {
         text: t('post.deleteConfirmYes'),
         style: 'destructive',
-        onPress: () => void remove(post.id),
+        onPress: () =>
+          void remove(post.id).then(() => {
+            if (detail) router.back();
+          }),
       },
     ]);
 
@@ -36,6 +49,24 @@ export const PostItem = memo(function PostItem({ post }: { post: PostFieldsFragm
       text={post.text}
       seeMoreLabel={t('post.seeMore')}
       seeLessLabel={t('post.seeLess')}
+      onPress={detail ? undefined : () => router.push(`/post/${post.id}`)}
+      actions={
+        <PostActions
+          liked={post.viewerHasLiked}
+          likes={post.counts.reactions}
+          comments={post.counts.comments}
+          shares={post.counts.shares}
+          labels={{
+            like: t('post.like'),
+            unlike: t('post.unlike'),
+            comment: t('post.comment'),
+            share: t('post.share'),
+          }}
+          onLike={() => void toggle(post)}
+          onComment={() => (detail ? undefined : openComments(target))}
+          onShare={() => openShare(target)}
+        />
+      }
       menu={
         post.viewerIsAuthor ? (
           <Button

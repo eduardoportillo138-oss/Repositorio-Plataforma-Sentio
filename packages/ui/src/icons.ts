@@ -4,7 +4,9 @@
  */
 export {
   ArrowLeft as BackIcon,
+  Bell as BellIcon,
   Camera as CameraIcon,
+  Link as LinkIcon,
   Home as HomeIcon,
   Lock as LockIcon,
   LogOut as LogOutIcon,
@@ -14,4 +16,5 @@ export {
   Search as SearchIcon,
   Trash2 as TrashIcon,
   User as ProfileIcon,
+  X as CloseIcon,
 } from '@tamagui/lucide-icons';

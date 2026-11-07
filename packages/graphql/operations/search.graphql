@@ -1,0 +1,26 @@
+# Búsqueda. Solo datos públicos (PublicUser no tiene campos privados).
+
+fragment UserSearchFields on PublicUser {
+  id
+  handle
+  displayName
+  tags
+  avatar {
+    ...AvatarFields
+  }
+}
+
+query SearchUsers($query: String!, $first: Int = 20, $after: String) {
+  searchUsers(query: $query, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...UserSearchFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

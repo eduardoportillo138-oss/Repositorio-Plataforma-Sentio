@@ -38,6 +38,8 @@ export const envSchema = z
     RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(10),
     /** Publicaciones por usuario y hora. */
     RATE_LIMIT_POSTS_PER_HOUR: z.coerce.number().int().positive().default(10),
+    /** Envíos de "compartir" por usuario y hora. */
+    RATE_LIMIT_SHARES_PER_HOUR: z.coerce.number().int().positive().default(30),
 
     PRIVACY_NOTICE_VERSION: z.string().min(1),
 

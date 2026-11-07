@@ -17,6 +17,7 @@ fragment PostFields on Post {
   visibility
   createdAt
   viewerIsAuthor
+  viewerHasLiked
   counts {
     reactions
     comments

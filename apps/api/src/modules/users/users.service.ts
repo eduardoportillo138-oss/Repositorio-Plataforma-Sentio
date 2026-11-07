@@ -1,8 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { type Locale, type PrivateContactData, type UpdateProfileInput } from '@sentio/core';
+import {
+  escapeRegex,
+  type Locale,
+  type PrivateContactData,
+  type UpdateProfileInput,
+} from '@sentio/core';
 import { type ClientSession, Model, Types } from 'mongoose';
 import { Errors } from '../../common/errors/app-error';
+import { type Connection } from '../../common/pagination/connection.type';
+import { paginate } from '../../common/pagination/paginate';
+import { type PublicUserModel, toPublicUser } from './dto/public-user.model';
 import { type Avatar, User, type UserDocumentLean } from './schemas/user.schema';
 import { UserEvents } from './user-events';
 
@@ -155,6 +163,32 @@ export class UsersService {
     if (!before) throw Errors.notFound('Usuario');
     if (before.avatar) this.events.profileChanged(userId);
     return { user: { ...before, avatar: null }, previous: before.avatar ?? null };
+  }
+
+  /**
+   * Búsqueda provisional de perfiles públicos por prefijo de @handle o de una palabra del
+   * nombre. `query` llega normalizada (minúsculas, sin acentos). Solo datos públicos.
+   * TODO(Fase 5): se reemplaza por SearchProvider con campos normalizados e índices.
+   */
+  searchPublic(
+    query: string,
+    args: { first?: number | null; after?: string | null },
+  ): Promise<Connection<PublicUserModel>> {
+    const prefix = escapeRegex(query);
+    return paginate(this.userModel, toPublicUser, {
+      filter: {
+        status: 'active',
+        $or: [
+          { handle: { $regex: `^${prefix.replace(/^@/, '')}` } },
+          // Inicio del nombre o de cualquier palabra del nombre.
+          { displayName: { $regex: `(^|\\s)${prefix}`, $options: 'i' } },
+        ],
+      },
+      sortField: 'handle',
+      direction: 1,
+      first: args.first,
+      after: args.after,
+    });
   }
 
   /** Revocación/otorgamiento del consentimiento para finalidades secundarias (LFPDPPP). */

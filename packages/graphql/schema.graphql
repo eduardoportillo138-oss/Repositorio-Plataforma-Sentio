@@ -39,6 +39,32 @@ type AvatarUploadTicket {
   uploadUrl: String!
 }
 
+type Comment {
+  """Datos públicos del autor."""
+  author: PublicUser!
+  createdAt: DateTime!
+  id: ID!
+
+  """Post comentado (para actualizar contadores en la caché del cliente)."""
+  post: Post
+  text: String!
+
+  """
+  true si el usuario actual puede borrarlo (autor del comentario o del post).
+  """
+  viewerCanDelete: Boolean!
+}
+
+type CommentConnection {
+  edges: [CommentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CommentEdge {
+  cursor: String!
+  node: Comment!
+}
+
 """Consentimientos del titular (solo visibles para él)."""
 type Consents {
   marketingOptIn: Boolean!
@@ -158,6 +184,9 @@ enum MembershipStatus {
 }
 
 type Mutation {
+  """Comenta una publicación (de 1 a 1000 caracteres)."""
+  addComment(postId: ID!, text: String!): Comment!
+
   """
   Paso 2: confirma la subida y la manda a procesar. Si las colas están activas el resultado llega por Socket.IO (media:ready); si no, se devuelve ya procesado.
   """
@@ -167,12 +196,22 @@ type Mutation {
   """Crea una publicación (máximo 10 por hora)."""
   createPost(input: CreatePostInput!): Post!
 
+  """
+  Borra un comentario (su autor o el autor del post). Devuelve el post actualizado.
+  """
+  deleteComment(commentId: ID!): Post
+
   """Borra (lógicamente) una publicación propia."""
   deletePost(postId: ID!): ID!
   login(input: LoginInput!): AuthPayload!
 
   """Cierra la sesión actual o todas (allDevices)."""
   logout(allDevices: Boolean! = false): Boolean!
+
+  """
+  Marca como leídas las indicadas, o todas si no se indican. Devuelve cuántas.
+  """
+  markNotificationsRead(ids: [ID!]): Int!
 
   """
   Canjea un refresh token por un par nuevo. Si se omite `token`, se lee de la cookie.
@@ -189,6 +228,16 @@ type Mutation {
   requestAvatarUpload(mimeType: String!, sizeBytes: Int!): AvatarUploadTicket!
 
   """
+  Comparte una publicación pública con hasta 10 personas (crea una notificación para cada una).
+  """
+  sharePost(message: String, postId: ID!, recipientIds: [ID!]!): SharePostResult!
+
+  """
+  Da o quita "Me gusta". Devuelve el post con contador y viewerHasLiked al día.
+  """
+  toggleLike(postId: ID!): Post!
+
+  """
   Otorga o revoca el consentimiento para finalidades secundarias (marketing).
   """
   updateMarketingConsent(optIn: Boolean!): User!
@@ -198,6 +247,31 @@ type Mutation {
 
   """Actualiza nombre, biografía y cualidades."""
   updateProfile(input: UpdateProfileInput!): User!
+}
+
+type Notification {
+  """Quién la originó."""
+  actor: PublicUser
+  createdAt: DateTime!
+  id: ID!
+  message: String
+
+  """Publicación relacionada, si existe y el usuario la puede ver."""
+  post: Post
+  readAt: DateTime
+
+  """share, comment, reaction…"""
+  type: String!
+}
+
+type NotificationConnection {
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type NotificationEdge {
+  cursor: String!
+  node: Notification!
 }
 
 type PageInfo {
@@ -215,6 +289,9 @@ type Post {
   id: ID!
   text: String!
   title: String!
+
+  """true si el usuario actual le dio Me gusta (en lote por página)."""
+  viewerHasLiked: Boolean!
 
   """true si el usuario actual es el autor."""
   viewerIsAuthor: Boolean!
@@ -271,6 +348,16 @@ type PublicUser {
   tags: [String!]!
 }
 
+type PublicUserConnection {
+  edges: [PublicUserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PublicUserEdge {
+  cursor: String!
+  node: PublicUser!
+}
+
 type Query {
   """
   Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, para no revelar la existencia de grupos privados).
@@ -284,10 +371,27 @@ type Query {
   """Usuario autenticado."""
   me: User!
 
+  """Mis notificaciones, de la más reciente a la más antigua."""
+  notifications(after: String, first: Int = 20): NotificationConnection!
+
+  """Detalle de una publicación. null si no existe o no se puede ver."""
+  post(id: ID!): Post
+
+  """Comentarios de primer nivel, del más antiguo al más reciente."""
+  postComments(after: String, first: Int = 20, postId: ID!): CommentConnection!
+
   """
   Catálogo de cualidades para las etiquetas del perfil (el cliente las traduce).
   """
   profileQualities: [ProfileQuality!]!
+
+  """
+  Busca personas por nombre o @handle (de 2 a 80 caracteres). Solo datos públicos.
+  """
+  searchUsers(after: String, first: Int = 20, query: String!): PublicUserConnection!
+
+  """Cuántas notificaciones sin leer tengo."""
+  unreadNotificationsCount: Int!
 
   """Perfil público por handle."""
   user(handle: String!): User
@@ -311,6 +415,14 @@ input RegisterInput {
   """Consentimiento opcional para finalidades secundarias."""
   marketingOptIn: Boolean
   password: String!
+}
+
+type SharePostResult {
+  """El post con counts.shares actualizado."""
+  post: Post!
+
+  """A cuántas personas se envió."""
+  sentTo: Int!
 }
 
 input UpdatePrivateContactInput {

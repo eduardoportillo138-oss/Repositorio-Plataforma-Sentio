@@ -17,6 +17,11 @@ module.exports = {
     'src/modules/media/**/*.ts',
     'src/modules/posts/**/*.ts',
     'src/common/rate-limit/**/*.ts',
+    'src/modules/reactions/**/*.ts',
+    'src/modules/comments/**/*.ts',
+    'src/modules/shares/**/*.ts',
+    'src/modules/notifications/**/*.ts',
+    'src/common/dataloaders/**/*.ts',
     'src/workers/media.processor.ts',
     'src/workers/posts.processor.ts',
     '!**/*.spec.ts',
@@ -27,6 +32,10 @@ module.exports = {
     './src/modules/media/': { statements: 80, branches: 80, functions: 80, lines: 80 },
     './src/modules/posts/': { statements: 80, branches: 80, functions: 80, lines: 80 },
     './src/common/rate-limit/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/modules/reactions/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/modules/comments/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/modules/shares/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/modules/notifications/': { statements: 80, branches: 80, functions: 80, lines: 80 },
   },
   projects: [
     {

@@ -6,3 +6,5 @@ export * from './profile/qualities';
 export * from './permissions/group-roles';
 export * from './validation/post';
 export * from './time/relative';
+export * from './validation/interactions';
+export * from './validation/search';

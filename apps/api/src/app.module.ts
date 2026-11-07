@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { PostsModule } from './modules/posts/posts.module';
 import { ReactionsModule } from './modules/reactions/reactions.module';
 import { SearchModule } from './modules/search/search.module';
+import { SharesModule } from './modules/shares/shares.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkersModule } from './workers/workers.module';
 
@@ -80,6 +81,7 @@ import { WorkersModule } from './workers/workers.module';
     NotificationsModule,
     MediaModule,
     SearchModule,
+    SharesModule,
     ModerationModule,
     GatewaysModule,
   ],

@@ -15,7 +15,7 @@ import { ConnectionArgs } from '../../common/pagination/connection.type';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { UserRateLimit } from '../../common/rate-limit/user-rate-limit.guard';
 import { PublicUserModel, toPublicUser } from '../users/dto/public-user.model';
-import { CreatePostInput, PostConnection, PostModel } from './dto/post.dto';
+import { CreatePostInput, PostConnection, PostModel, toPostModel } from './dto/post.dto';
 import { PostsService } from './posts.service';
 
 @Resolver(() => PostModel)
@@ -42,6 +42,18 @@ export class PostsResolver {
     @Args('postId', { type: () => ID }, new ZodValidationPipe(objectIdSchema)) postId: string,
   ): Promise<string> {
     return this.posts.remove(viewer.userId, postId);
+  }
+
+  @Query(() => PostModel, {
+    nullable: true,
+    description: 'Detalle de una publicación. null si no existe o no se puede ver.',
+  })
+  async post(
+    @CurrentUser() viewer: AuthUser,
+    @Args('id', { type: () => ID }, new ZodValidationPipe(objectIdSchema)) id: string,
+  ): Promise<PostModel | null> {
+    const post = await this.posts.findVisible(id, viewer.userId);
+    return post ? toPostModel(post) : null;
   }
 
   @Query(() => PostConnection, {
@@ -75,6 +87,13 @@ export class PostsResolver {
       bio: null,
       tags: [],
     };
+  }
+
+  @ResolveField(() => Boolean, {
+    description: 'true si el usuario actual le dio Me gusta (en lote por página).',
+  })
+  viewerHasLiked(@Parent() post: PostModel, @Context() ctx: GqlContext): Promise<boolean> {
+    return ctx.loaders.viewerLikedPostIds.load(post.id);
   }
 
   @ResolveField(() => Boolean, { description: 'true si el usuario actual es el autor.' })

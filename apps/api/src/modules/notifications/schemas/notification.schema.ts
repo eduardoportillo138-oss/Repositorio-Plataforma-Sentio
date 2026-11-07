@@ -6,10 +6,12 @@ export const NOTIFICATION_TYPES = [
   'reaction',
   'comment',
   'mention',
+  'share',
   'group_invite',
   'group_request',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
 @Schema({ collection: 'notifications', timestamps: true })
 export class Notification {
   _id!: Types.ObjectId;
@@ -32,6 +34,10 @@ export class Notification {
     }),
   )
   entity!: { kind: string; id: Types.ObjectId } | null;
+
+  /** Texto libre del actor (p. ej. el mensaje al compartir). */
+  @Prop({ type: String, default: null, maxlength: 500 })
+  message!: string | null;
 
   @Prop({ type: Date, default: null })
   readAt!: Date | null;

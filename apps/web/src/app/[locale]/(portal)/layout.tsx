@@ -1,8 +1,9 @@
 'use client';
 
-import { useAuth } from '@sentio/api-client';
+import { useAuth, useUnreadNotifications } from '@sentio/api-client';
 import { useTranslation } from '@sentio/i18n';
 import {
+  BellButton,
   Button,
   HomeIcon,
   LogOutIcon,
@@ -19,6 +20,7 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { PostInteractionsProvider } from '@/components/PostInteractions';
 
 /** Secciones del portal; `segment` es la ruta sin el prefijo de idioma. */
 const SECTIONS: readonly {
@@ -44,6 +46,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { locale } = useParams<{ locale: string }>();
+  const unread = useUnreadNotifications(status === 'authenticated');
 
   useEffect(() => {
     if (status === 'anonymous') router.replace(`/${locale}/login`);
@@ -102,6 +105,13 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <XStack gap="$3" alignItems="center">
+            <Link
+              href={`/${locale}/notifications`}
+              aria-current={pathname === `/${locale}/notifications` ? 'page' : undefined}
+              style={{ textDecoration: 'none' }}
+            >
+              <BellButton count={unread} label={t('notifications.open', { n: String(unread) })} />
+            </Link>
             <LanguageSwitcher marginTop="$0" />
             <Button
               tone="ghost"
@@ -115,7 +125,9 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         </XStack>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</main>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <PostInteractionsProvider>{children}</PostInteractionsProvider>
+      </main>
     </YStack>
   );
 }
