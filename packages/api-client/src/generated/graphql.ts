@@ -191,6 +191,8 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Comenta una publicación (de 1 a 1000 caracteres). */
   addComment: Comment;
+  /** Borra mi historial de búsquedas. */
+  clearSearchHistory: Scalars['Boolean']['output'];
   /** Paso 2: confirma la subida y la manda a procesar. Si las colas están activas el resultado llega por Socket.IO (media:ready); si no, se devuelve ya procesado. */
   confirmAvatarUpload: MediaAsset;
   createGroup: Group;
@@ -444,6 +446,10 @@ export type Query = {
   postComments: CommentConnection;
   /** Catálogo de cualidades para las etiquetas del perfil (el cliente las traduce). */
   profileQualities: Array<ProfileQuality>;
+  /** Mis búsquedas recientes (las últimas 10). */
+  recentSearches: Array<RecentSearch>;
+  /** Busca en el título y la descripción de publicaciones públicas y activas (de 2 a 80 caracteres). */
+  searchPosts: PostConnection;
   /** Busca personas por nombre o @handle (de 2 a 80 caracteres). Solo datos públicos. */
   searchUsers: PublicUserConnection;
   /** Cuántas notificaciones sin leer tengo. */
@@ -491,6 +497,18 @@ export type QueryPostCommentsArgs = {
 };
 
 
+export type QueryRecentSearchesArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QuerySearchPostsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  query: Scalars['String']['input'];
+};
+
+
 export type QuerySearchUsersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -507,6 +525,14 @@ export type QueryUserPostsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   handle: Scalars['String']['input'];
+};
+
+export type RecentSearch = {
+  __typename?: 'RecentSearch';
+  id: Scalars['ID']['output'];
+  query: Scalars['String']['output'];
+  /** Última vez que se buscó. */
+  searchedAt: Scalars['DateTime']['output'];
 };
 
 export type RegisterInput = {
@@ -780,6 +806,25 @@ export type SearchUsersQueryVariables = Exact<{
 
 
 export type SearchUsersQuery = { __typename?: 'Query', searchUsers: { __typename?: 'PublicUserConnection', edges: Array<{ __typename?: 'PublicUserEdge', cursor: string, node: { __typename?: 'PublicUser', id: string, handle: string, displayName: string, tags: Array<string>, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor: string | null } } };
+
+export type SearchPostsQueryVariables = Exact<{
+  query: Scalars['String']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type SearchPostsQuery = { __typename?: 'Query', searchPosts: { __typename?: 'PostConnection', edges: Array<{ __typename?: 'PostEdge', cursor: string, node: { __typename?: 'Post', id: string, title: string, text: string, visibility: PostVisibility, createdAt: string, viewerIsAuthor: boolean, viewerHasLiked: boolean, counts: { __typename?: 'PostCounts', reactions: number, comments: number, shares: number }, author: { __typename?: 'PublicUser', id: string, handle: string, displayName: string, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } } }>, pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor: string | null } } };
+
+export type RecentSearchesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type RecentSearchesQuery = { __typename?: 'Query', recentSearches: Array<{ __typename?: 'RecentSearch', id: string, query: string, searchedAt: string }> };
+
+export type ClearSearchHistoryMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ClearSearchHistoryMutation = { __typename?: 'Mutation', clearSearchHistory: boolean };
 
 export const AvatarFieldsFragmentDoc = gql`
     fragment AvatarFields on Avatar {
@@ -1936,3 +1981,131 @@ export type SearchUsersQueryHookResult = ReturnType<typeof useSearchUsersQuery>;
 export type SearchUsersLazyQueryHookResult = ReturnType<typeof useSearchUsersLazyQuery>;
 export type SearchUsersSuspenseQueryHookResult = ReturnType<typeof useSearchUsersSuspenseQuery>;
 export type SearchUsersQueryResult = Apollo.QueryResult<SearchUsersQuery, SearchUsersQueryVariables>;
+export const SearchPostsDocument = gql`
+    query SearchPosts($query: String!, $first: Int = 20, $after: String) {
+  searchPosts(query: $query, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...PostFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+    ${PostFieldsFragmentDoc}`;
+
+/**
+ * __useSearchPostsQuery__
+ *
+ * To run a query within a React component, call `useSearchPostsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchPostsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchPostsQuery({
+ *   variables: {
+ *      query: // value for 'query'
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useSearchPostsQuery(baseOptions: Apollo.QueryHookOptions<SearchPostsQuery, SearchPostsQueryVariables> & ({ variables: SearchPostsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchPostsQuery, SearchPostsQueryVariables>(SearchPostsDocument, options);
+      }
+export function useSearchPostsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchPostsQuery, SearchPostsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchPostsQuery, SearchPostsQueryVariables>(SearchPostsDocument, options);
+        }
+// @ts-ignore
+export function useSearchPostsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<SearchPostsQuery, SearchPostsQueryVariables>): Apollo.UseSuspenseQueryResult<SearchPostsQuery, SearchPostsQueryVariables>;
+export function useSearchPostsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<SearchPostsQuery, SearchPostsQueryVariables>): Apollo.UseSuspenseQueryResult<SearchPostsQuery | undefined, SearchPostsQueryVariables>;
+export function useSearchPostsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<SearchPostsQuery, SearchPostsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<SearchPostsQuery, SearchPostsQueryVariables>(SearchPostsDocument, options);
+        }
+export type SearchPostsQueryHookResult = ReturnType<typeof useSearchPostsQuery>;
+export type SearchPostsLazyQueryHookResult = ReturnType<typeof useSearchPostsLazyQuery>;
+export type SearchPostsSuspenseQueryHookResult = ReturnType<typeof useSearchPostsSuspenseQuery>;
+export type SearchPostsQueryResult = Apollo.QueryResult<SearchPostsQuery, SearchPostsQueryVariables>;
+export const RecentSearchesDocument = gql`
+    query RecentSearches {
+  recentSearches {
+    id
+    query
+    searchedAt
+  }
+}
+    `;
+
+/**
+ * __useRecentSearchesQuery__
+ *
+ * To run a query within a React component, call `useRecentSearchesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRecentSearchesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRecentSearchesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useRecentSearchesQuery(baseOptions?: Apollo.QueryHookOptions<RecentSearchesQuery, RecentSearchesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<RecentSearchesQuery, RecentSearchesQueryVariables>(RecentSearchesDocument, options);
+      }
+export function useRecentSearchesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<RecentSearchesQuery, RecentSearchesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<RecentSearchesQuery, RecentSearchesQueryVariables>(RecentSearchesDocument, options);
+        }
+// @ts-ignore
+export function useRecentSearchesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<RecentSearchesQuery, RecentSearchesQueryVariables>): Apollo.UseSuspenseQueryResult<RecentSearchesQuery, RecentSearchesQueryVariables>;
+export function useRecentSearchesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<RecentSearchesQuery, RecentSearchesQueryVariables>): Apollo.UseSuspenseQueryResult<RecentSearchesQuery | undefined, RecentSearchesQueryVariables>;
+export function useRecentSearchesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<RecentSearchesQuery, RecentSearchesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<RecentSearchesQuery, RecentSearchesQueryVariables>(RecentSearchesDocument, options);
+        }
+export type RecentSearchesQueryHookResult = ReturnType<typeof useRecentSearchesQuery>;
+export type RecentSearchesLazyQueryHookResult = ReturnType<typeof useRecentSearchesLazyQuery>;
+export type RecentSearchesSuspenseQueryHookResult = ReturnType<typeof useRecentSearchesSuspenseQuery>;
+export type RecentSearchesQueryResult = Apollo.QueryResult<RecentSearchesQuery, RecentSearchesQueryVariables>;
+export const ClearSearchHistoryDocument = gql`
+    mutation ClearSearchHistory {
+  clearSearchHistory
+}
+    `;
+export type ClearSearchHistoryMutationFn = Apollo.MutationFunction<ClearSearchHistoryMutation, ClearSearchHistoryMutationVariables>;
+
+/**
+ * __useClearSearchHistoryMutation__
+ *
+ * To run a mutation, you first call `useClearSearchHistoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useClearSearchHistoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [clearSearchHistoryMutation, { data, loading, error }] = useClearSearchHistoryMutation({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useClearSearchHistoryMutation(baseOptions?: Apollo.MutationHookOptions<ClearSearchHistoryMutation, ClearSearchHistoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ClearSearchHistoryMutation, ClearSearchHistoryMutationVariables>(ClearSearchHistoryDocument, options);
+      }
+export type ClearSearchHistoryMutationHookResult = ReturnType<typeof useClearSearchHistoryMutation>;
+export type ClearSearchHistoryMutationResult = Apollo.MutationResult<ClearSearchHistoryMutation>;
+export type ClearSearchHistoryMutationOptions = Apollo.BaseMutationOptions<ClearSearchHistoryMutation, ClearSearchHistoryMutationVariables>;

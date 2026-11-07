@@ -187,6 +187,9 @@ type Mutation {
   """Comenta una publicación (de 1 a 1000 caracteres)."""
   addComment(postId: ID!, text: String!): Comment!
 
+  """Borra mi historial de búsquedas."""
+  clearSearchHistory: Boolean!
+
   """
   Paso 2: confirma la subida y la manda a procesar. Si las colas están activas el resultado llega por Socket.IO (media:ready); si no, se devuelve ya procesado.
   """
@@ -385,6 +388,14 @@ type Query {
   """
   profileQualities: [ProfileQuality!]!
 
+  """Mis búsquedas recientes (las últimas 10)."""
+  recentSearches(first: Int = 10): [RecentSearch!]!
+
+  """
+  Busca en el título y la descripción de publicaciones públicas y activas (de 2 a 80 caracteres).
+  """
+  searchPosts(after: String, first: Int = 20, query: String!): PostConnection!
+
   """
   Busca personas por nombre o @handle (de 2 a 80 caracteres). Solo datos públicos.
   """
@@ -398,6 +409,14 @@ type Query {
 
   """Publicaciones de un perfil."""
   userPosts(after: String, first: Int = 20, handle: String!): PostConnection!
+}
+
+type RecentSearch {
+  id: ID!
+  query: String!
+
+  """Última vez que se buscó."""
+  searchedAt: DateTime!
 }
 
 input RegisterInput {

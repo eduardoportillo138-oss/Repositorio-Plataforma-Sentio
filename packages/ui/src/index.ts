@@ -25,6 +25,14 @@ export { CommentItem, type CommentItemProps } from './components/CommentItem';
 export { CommentComposer, type CommentComposerProps } from './components/CommentComposer';
 export { UserRow, type UserRowProps } from './components/UserRow';
 export {
+  SegmentedControl,
+  type SegmentedControlProps,
+  type SegmentedOption,
+} from './components/SegmentedControl';
+export { SearchField, type SearchFieldProps } from './components/SearchField';
+export { HighlightedText, type TextRange } from './components/HighlightedText';
+export { RecentSearchList, type RecentSearchListProps } from './components/RecentSearchList';
+export {
   Badge,
   BellButton,
   type BellButtonProps,

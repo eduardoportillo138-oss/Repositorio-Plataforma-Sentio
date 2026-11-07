@@ -59,3 +59,4 @@ export {
   useUserSearch,
 } from './interactions';
 export { useNotificationsList, useUnreadNotifications } from './notifications';
+export { isSearchTab, type SearchTab, usePostSearch, useRecentSearches } from './search';

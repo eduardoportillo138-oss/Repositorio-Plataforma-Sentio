@@ -57,18 +57,6 @@ export const es = {
       profile: 'Perfil',
     },
     logout: 'Cerrar sesión',
-    home: {
-      empty: {
-        title: 'Hola, {{name}}',
-        body: 'Aquí verás las publicaciones de la comunidad. Por ahora no hay nada que mostrar.',
-      },
-    },
-    search: {
-      empty: {
-        title: 'Búsqueda',
-        body: 'Pronto podrás buscar personas y publicaciones.',
-      },
-    },
   },
   profile: {
     qualities: {
@@ -186,6 +174,20 @@ export const es = {
     copied: 'Enlace copiado.',
     maxReached: 'Puedes elegir hasta 10 personas.',
     close: 'Cerrar',
+  },
+  search: {
+    placeholder: 'Buscar personas o publicaciones',
+    label: 'Buscar',
+    clear: 'Limpiar búsqueda',
+    tabs: 'Tipo de resultado',
+    users: 'Usuarios',
+    posts: 'Publicaciones',
+    hint: 'Escribe al menos 2 caracteres.',
+    noResults: 'Sin resultados para "{{query}}".',
+    recent: 'Búsquedas recientes',
+    noRecent: 'Aún no has buscado nada.',
+    clearHistory: 'Borrar historial',
+    error: 'No pudimos completar la búsqueda.',
   },
   notifications: {
     title: 'Notificaciones',

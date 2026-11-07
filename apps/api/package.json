@@ -14,7 +14,8 @@
     "test:handles": "jest --detectOpenHandles",
     "test:cov": "jest --coverage",
     "schema:emit": "nest build && node dist/scripts/emit-schema.js",
-    "db:memory": "node scripts/mongo-memory.mjs"
+    "db:memory": "node scripts/mongo-memory.mjs",
+    "search:backfill": "nest build && node dist/scripts/backfill-search-fields.js"
   },
   "dependencies": {
     "@apollo/server": "5.5.1",

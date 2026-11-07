@@ -75,6 +75,13 @@ export class Post {
   @Prop({ type: Date, default: null })
   removedAt!: Date | null;
 
+  /** Título y descripción normalizados para la búsqueda local. No se seleccionan por defecto. */
+  @Prop({ type: String, default: '', select: false })
+  searchTitle?: string;
+
+  @Prop({ type: String, default: '', select: false })
+  searchText?: string;
+
   createdAt!: Date;
   updatedAt!: Date;
 }
@@ -90,3 +97,8 @@ PostSchema.index(
 // userPosts y la sincronización de la copia del autor.
 PostSchema.index({ authorId: 1, createdAt: -1, _id: -1 }, { name: 'author_createdAt' });
 PostSchema.index({ groupId: 1, createdAt: -1, _id: -1 }, { name: 'group_createdAt' });
+// Búsqueda local: palabras completas por índice de texto (sin stemming: idioma "none").
+PostSchema.index(
+  { searchTitle: 'text', searchText: 'text' },
+  { name: 'search_text', weights: { searchTitle: 3, searchText: 1 }, default_language: 'none' },
+);

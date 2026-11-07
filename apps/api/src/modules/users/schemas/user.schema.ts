@@ -113,6 +113,10 @@ export class User {
   @Prop({ type: PrivateContactSchema, default: () => ({}) })
   privateContact!: PrivateContact;
 
+  /** Nombre + handle normalizados para la búsqueda local. No se selecciona por defecto. */
+  @Prop({ type: String, default: '', select: false })
+  searchName?: string;
+
   /** Hash Argon2id. Nunca se selecciona por defecto. */
   @Prop({ required: true, select: false })
   passwordHash!: string;
@@ -137,3 +141,4 @@ export type UserDocumentLean = Omit<User, 'passwordHash'>;
 export const UserSchema = SchemaFactory.createForClass(User);
 UserSchema.index({ email: 1 }, { unique: true, name: 'uniq_email' });
 UserSchema.index({ handle: 1 }, { unique: true, name: 'uniq_handle' });
+UserSchema.index({ status: 1, searchName: 1 }, { name: 'search_name' });

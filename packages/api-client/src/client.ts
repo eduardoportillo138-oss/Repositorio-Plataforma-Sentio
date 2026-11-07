@@ -139,6 +139,7 @@ export function createCache(): InMemoryCache {
           postComments: relayStylePagination(['postId']),
           notifications: relayStylePagination([]),
           searchUsers: relayStylePagination(['query']),
+          searchPosts: relayStylePagination(['query']),
         },
       },
     },

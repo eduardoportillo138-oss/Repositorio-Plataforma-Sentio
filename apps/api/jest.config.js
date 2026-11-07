@@ -21,6 +21,7 @@ module.exports = {
     'src/modules/comments/**/*.ts',
     'src/modules/shares/**/*.ts',
     'src/modules/notifications/**/*.ts',
+    'src/modules/search/**/*.ts',
     'src/common/dataloaders/**/*.ts',
     'src/workers/media.processor.ts',
     'src/workers/posts.processor.ts',
@@ -36,6 +37,7 @@ module.exports = {
     './src/modules/comments/': { statements: 80, branches: 80, functions: 80, lines: 80 },
     './src/modules/shares/': { statements: 80, branches: 80, functions: 80, lines: 80 },
     './src/modules/notifications/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/modules/search/': { statements: 80, branches: 80, functions: 80, lines: 80 },
   },
   projects: [
     {

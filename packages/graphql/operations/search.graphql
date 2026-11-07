@@ -24,3 +24,30 @@ query SearchUsers($query: String!, $first: Int = 20, $after: String) {
     }
   }
 }
+
+query SearchPosts($query: String!, $first: Int = 20, $after: String) {
+  searchPosts(query: $query, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...PostFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query RecentSearches {
+  recentSearches {
+    id
+    query
+    searchedAt
+  }
+}
+
+mutation ClearSearchHistory {
+  clearSearchHistory
+}

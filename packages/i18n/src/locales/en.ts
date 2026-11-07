@@ -55,18 +55,6 @@ export const en: Messages = {
       profile: 'Profile',
     },
     logout: 'Sign out',
-    home: {
-      empty: {
-        title: 'Hi, {{name}}',
-        body: "Posts from the community will show up here. There's nothing to show yet.",
-      },
-    },
-    search: {
-      empty: {
-        title: 'Search',
-        body: "Soon you'll be able to search for people and posts.",
-      },
-    },
   },
   profile: {
     qualities: {
@@ -184,6 +172,20 @@ export const en: Messages = {
     copied: 'Link copied.',
     maxReached: 'You can choose up to 10 people.',
     close: 'Close',
+  },
+  search: {
+    placeholder: 'Search people or posts',
+    label: 'Search',
+    clear: 'Clear search',
+    tabs: 'Result type',
+    users: 'Users',
+    posts: 'Posts',
+    hint: 'Type at least 2 characters.',
+    noResults: 'No results for "{{query}}".',
+    recent: 'Recent searches',
+    noRecent: "You haven't searched for anything yet.",
+    clearHistory: 'Clear history',
+    error: "We couldn't complete the search.",
   },
   notifications: {
     title: 'Notifications',

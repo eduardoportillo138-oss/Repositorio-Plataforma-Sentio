@@ -5,6 +5,7 @@ import { type ClientSession, type FilterQuery, Model, Types } from 'mongoose';
 import { Errors } from '../../common/errors/app-error';
 import { type Connection } from '../../common/pagination/connection.type';
 import { paginate } from '../../common/pagination/paginate';
+import { postSearchFields } from '../search/search-fields';
 import { type UserDocumentLean } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
 import { type PostModel, toPostModel } from './dto/post.dto';
@@ -91,8 +92,10 @@ export class PostsService {
       title: input.title,
       text: input.text,
       visibility: input.visibility,
+      ...postSearchFields(input.title, input.text),
     });
-    return toPostModel(doc.toObject());
+    const { searchTitle: _t, searchText: _x, ...post } = doc.toObject();
+    return toPostModel(post);
   }
 
   /** Borrado lógico: solo el autor. */

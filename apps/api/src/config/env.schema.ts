@@ -40,8 +40,15 @@ export const envSchema = z
     RATE_LIMIT_POSTS_PER_HOUR: z.coerce.number().int().positive().default(10),
     /** Envíos de "compartir" por usuario y hora. */
     RATE_LIMIT_SHARES_PER_HOUR: z.coerce.number().int().positive().default(30),
+    /** Búsquedas (personas + publicaciones) por usuario y minuto. */
+    RATE_LIMIT_SEARCH_PER_MINUTE: z.coerce.number().int().positive().default(30),
 
     PRIVACY_NOTICE_VERSION: z.string().min(1),
+
+    /** local: MongoDB local (campos normalizados + índice de texto). atlas: Atlas Search ($search). */
+    SEARCH_PROVIDER: z.enum(['local', 'atlas']).default('local'),
+    ATLAS_SEARCH_USERS_INDEX: z.string().default('users_search'),
+    ATLAS_SEARCH_POSTS_INDEX: z.string().default('posts_search'),
 
     /** URL pública de la API (para construir URLs del almacenamiento en memoria). */
     API_PUBLIC_URL: z.url().default('http://localhost:4000'),

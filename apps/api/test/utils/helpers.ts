@@ -18,7 +18,9 @@ let counter = 0;
 /** Registra un usuario con datos únicos y devuelve su id, handle y access token. */
 export async function registerUser(t: TestApp, prefix = 'user'): Promise<TestUser> {
   counter += 1;
-  const handle = `${prefix}_${Date.now().toString(36)}_${counter}`.slice(0, 30);
+  // Hora + aleatorio + contador: las suites corren en paralelo en procesos distintos.
+  const random = Math.random().toString(36).slice(2, 7);
+  const handle = `${prefix}_${Date.now().toString(36)}${random}_${counter}`.slice(0, 30);
   const res = await t.gql<{
     register: { accessToken: string; user: { id: string; handle: string } };
   }>(REGISTER, {

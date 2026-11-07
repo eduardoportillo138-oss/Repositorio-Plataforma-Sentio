@@ -150,9 +150,9 @@ export function useDebouncedValue<T>(value: T, delayMs: number): T {
 export const SEARCH_DEBOUNCE_MS = 300;
 
 /** Búsqueda de personas con debounce de 300 ms (no consulta con menos de 2 caracteres). */
-export function useUserSearch(text: string) {
+export function useUserSearch(text: string, active = true) {
   const query = useDebouncedValue(text.trim(), SEARCH_DEBOUNCE_MS);
-  const enabled = query.length >= SEARCH_QUERY_MIN_LENGTH;
+  const enabled = active && query.length >= SEARCH_QUERY_MIN_LENGTH;
   const result = useSearchUsersQuery({
     variables: { query },
     skip: !enabled,
