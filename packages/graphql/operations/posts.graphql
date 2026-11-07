@@ -1,0 +1,68 @@
+# Publicaciones y feed de Inicio (paginación por cursor, 20 por página).
+
+# Datos públicos del autor: el tipo PublicUser no tiene campos privados.
+fragment PostAuthorFields on PublicUser {
+  id
+  handle
+  displayName
+  avatar {
+    ...AvatarFields
+  }
+}
+
+fragment PostFields on Post {
+  id
+  title
+  text
+  visibility
+  createdAt
+  viewerIsAuthor
+  counts {
+    reactions
+    comments
+    shares
+  }
+  author {
+    ...PostAuthorFields
+  }
+}
+
+query HomeFeed($first: Int = 20, $after: String) {
+  homeFeed(first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...PostFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query UserPosts($handle: String!, $first: Int = 20, $after: String) {
+  userPosts(handle: $handle, first: $first, after: $after) {
+    edges {
+      cursor
+      node {
+        ...PostFields
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+mutation CreatePost($input: CreatePostInput!) {
+  createPost(input: $input) {
+    ...PostFields
+  }
+}
+
+mutation DeletePost($postId: ID!) {
+  deletePost(postId: $postId)
+}

@@ -1,6 +1,7 @@
 import { ErrorCode } from '@sentio/core';
 import { type Model, Types } from 'mongoose';
 import { type User } from './schemas/user.schema';
+import { UserEvents } from './user-events';
 import { UsersService } from './users.service';
 
 /** Encadena `.lean().exec()` (y `.select()`) como hace Mongoose. */
@@ -23,7 +24,10 @@ function setup(overrides: Partial<Record<keyof Model<User>, jest.Mock>> = {}) {
     create: jest.fn(),
     ...overrides,
   };
-  return { service: new UsersService(model as unknown as Model<User>), model };
+  const events = new UserEvents();
+  const changed: string[] = [];
+  events.profileChanged$.subscribe((e) => changed.push(e.userId));
+  return { service: new UsersService(model as unknown as Model<User>, events), model, changed };
 }
 
 const missingId = new Types.ObjectId().toHexString();
@@ -77,6 +81,20 @@ describe('UsersService', () => {
     const { service } = setup();
     await expectNotFound(service.updatePrivateContact(missingId, { phone: '+525512345678' }));
     await expectNotFound(service.updatePrivateContact(missingId, {}));
+  });
+
+  it('emite profileChanged al cambiar el nombre o la foto, no por la biografía', async () => {
+    const { service, changed } = setup({ findByIdAndUpdate: jest.fn(() => query({})) });
+    await service.updateProfile(missingId, { bio: 'x' });
+    expect(changed).toEqual([]);
+    await service.updateProfile(missingId, { displayName: 'Ana' });
+    await service.setAvatar(missingId, {
+      assetId: new Types.ObjectId(),
+      url256: 'a',
+      url512: 'b',
+      blurhash: 'c',
+    });
+    expect(changed).toEqual([missingId, missingId]);
   });
 
   it('setAvatar devuelve la foto anterior o null', async () => {

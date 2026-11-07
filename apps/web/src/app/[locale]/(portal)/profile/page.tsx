@@ -14,6 +14,7 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { UserAvatar } from '@/components/UserAvatar';
+import { UserPostsSection } from '@/components/UserPostsSection';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -55,6 +56,7 @@ export default function ProfilePage() {
           </>
         }
       />
+      <UserPostsSection handle={me.handle} />
     </PageContainer>
   );
 }

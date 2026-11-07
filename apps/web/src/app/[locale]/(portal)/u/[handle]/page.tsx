@@ -6,6 +6,7 @@ import { EmptyState, PageContainer, ProfileHeader, ProfileIcon, Spinner, YStack 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { UserAvatar } from '@/components/UserAvatar';
+import { UserPostsSection } from '@/components/UserPostsSection';
 
 /** Perfil público de otra persona: solo datos públicos (nunca contacto privado ni correo). */
 export default function PublicProfilePage() {
@@ -42,6 +43,7 @@ export default function PublicProfilePage() {
         tags={user.tags.map((k) => tr(`profile.qualities.${k}`) ?? k)}
         emptyBio={t('profile.view.noBio')}
       />
+      <UserPostsSection handle={user.handle} />
     </PageContainer>
   );
 }

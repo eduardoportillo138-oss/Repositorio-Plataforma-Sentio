@@ -7,18 +7,21 @@ export type InputMaybe<T> = T | null;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
-export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = {
+  [_ in K]?: never;
+};
+export type Incremental<T> =
+  T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
+  ID: { input: string; output: string };
+  String: { input: string; output: string };
+  Boolean: { input: boolean; output: boolean };
+  Int: { input: number; output: number };
+  Float: { input: number; output: number };
   /** A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format. */
-  DateTime: { input: string; output: string; }
+  DateTime: { input: string; output: string };
 };
 
 export type AuthPayload = {
@@ -72,6 +75,14 @@ export type CreateGroupInput = {
   visibility?: InputMaybe<GroupVisibility>;
 };
 
+export type CreatePostInput = {
+  /** Hasta 5000 caracteres. */
+  text?: InputMaybe<Scalars['String']['input']>;
+  /** De 1 a 120 caracteres. */
+  title: Scalars['String']['input'];
+  visibility?: InputMaybe<PostVisibility>;
+};
+
 export type Group = {
   __typename?: 'Group';
   createdAt: Scalars['DateTime']['output'];
@@ -109,11 +120,7 @@ export type GroupMemberEdge = {
   node: GroupMember;
 };
 
-export type GroupRole =
-  | 'ADMIN'
-  | 'MEMBER'
-  | 'MODERATOR'
-  | 'OWNER';
+export type GroupRole = 'ADMIN' | 'MEMBER' | 'MODERATOR' | 'OWNER';
 
 export type GroupVisibility =
   /** Cualquiera lo encuentra; solo los miembros ven el contenido. */
@@ -123,10 +130,7 @@ export type GroupVisibility =
   /** Solo los miembros saben que existe. Solo por invitación. */
   | 'SECRET';
 
-export type JoinPolicy =
-  | 'INVITE_ONLY'
-  | 'OPEN'
-  | 'REQUEST';
+export type JoinPolicy = 'INVITE_ONLY' | 'OPEN' | 'REQUEST';
 
 export type LoginInput = {
   email: Scalars['String']['input'];
@@ -143,22 +147,19 @@ export type MediaAsset = {
   status: MediaStatus;
 };
 
-export type MediaStatus =
-  | 'failed'
-  | 'pending'
-  | 'processing'
-  | 'ready';
+export type MediaStatus = 'failed' | 'pending' | 'processing' | 'ready';
 
-export type MembershipStatus =
-  | 'ACTIVE'
-  | 'BANNED'
-  | 'PENDING';
+export type MembershipStatus = 'ACTIVE' | 'BANNED' | 'PENDING';
 
 export type Mutation = {
   __typename?: 'Mutation';
   /** Paso 2: confirma la subida y la manda a procesar. Si las colas están activas el resultado llega por Socket.IO (media:ready); si no, se devuelve ya procesado. */
   confirmAvatarUpload: MediaAsset;
   createGroup: Group;
+  /** Crea una publicación (máximo 10 por hora). */
+  createPost: Post;
+  /** Borra (lógicamente) una publicación propia. */
+  deletePost: Scalars['ID']['output'];
   login: AuthPayload;
   /** Cierra la sesión actual o todas (allDevices). */
   logout: Scalars['Boolean']['output'];
@@ -177,52 +178,50 @@ export type Mutation = {
   updateProfile: User;
 };
 
-
 export type MutationConfirmAvatarUploadArgs = {
   assetId: Scalars['ID']['input'];
 };
-
 
 export type MutationCreateGroupArgs = {
   input: CreateGroupInput;
 };
 
+export type MutationCreatePostArgs = {
+  input: CreatePostInput;
+};
+
+export type MutationDeletePostArgs = {
+  postId: Scalars['ID']['input'];
+};
 
 export type MutationLoginArgs = {
   input: LoginInput;
 };
 
-
 export type MutationLogoutArgs = {
   allDevices?: Scalars['Boolean']['input'];
 };
-
 
 export type MutationRefreshTokenArgs = {
   token?: InputMaybe<Scalars['String']['input']>;
 };
 
-
 export type MutationRegisterArgs = {
   input: RegisterInput;
 };
-
 
 export type MutationRequestAvatarUploadArgs = {
   mimeType: Scalars['String']['input'];
   sizeBytes: Scalars['Int']['input'];
 };
 
-
 export type MutationUpdateMarketingConsentArgs = {
   optIn: Scalars['Boolean']['input'];
 };
 
-
 export type MutationUpdatePrivateContactArgs = {
   input: UpdatePrivateContactInput;
 };
-
 
 export type MutationUpdateProfileArgs = {
   input: UpdateProfileInput;
@@ -235,6 +234,45 @@ export type PageInfo = {
   hasPreviousPage: Scalars['Boolean']['output'];
   startCursor: Maybe<Scalars['String']['output']>;
 };
+
+export type Post = {
+  __typename?: 'Post';
+  /** Datos públicos actuales del autor (nunca datos privados). */
+  author: PublicUser;
+  counts: PostCounts;
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  text: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  /** true si el usuario actual es el autor. */
+  viewerIsAuthor: Scalars['Boolean']['output'];
+  visibility: PostVisibility;
+};
+
+export type PostConnection = {
+  __typename?: 'PostConnection';
+  edges: Array<PostEdge>;
+  pageInfo: PageInfo;
+};
+
+export type PostCounts = {
+  __typename?: 'PostCounts';
+  comments: Scalars['Int']['output'];
+  reactions: Scalars['Int']['output'];
+  shares: Scalars['Int']['output'];
+};
+
+export type PostEdge = {
+  __typename?: 'PostEdge';
+  cursor: Scalars['String']['output'];
+  node: Post;
+};
+
+export type PostVisibility =
+  /** Solo sus seguidores (y el autor). */
+  | 'followers'
+  /** Cualquier persona con sesión iniciada. */
+  | 'public';
 
 /** Datos de contacto privados del estudiante. */
 export type PrivateContact = {
@@ -253,24 +291,36 @@ export type ProfileQuality = {
   key: Scalars['String']['output'];
 };
 
+export type PublicUser = {
+  __typename?: 'PublicUser';
+  avatar: Maybe<Avatar>;
+  bio: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  handle: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  tags: Array<Scalars['String']['output']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   /** Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, para no revelar la existencia de grupos privados). */
   group: Maybe<Group>;
   groupMembers: GroupMemberConnection;
+  /** Inicio: publicaciones públicas, de la más reciente a la más antigua. */
+  homeFeed: PostConnection;
   /** Usuario autenticado. */
   me: User;
   /** Catálogo de cualidades para las etiquetas del perfil (el cliente las traduce). */
   profileQualities: Array<ProfileQuality>;
   /** Perfil público por handle. */
   user: Maybe<User>;
+  /** Publicaciones de un perfil. */
+  userPosts: PostConnection;
 };
-
 
 export type QueryGroupArgs = {
   id: Scalars['ID']['input'];
 };
-
 
 export type QueryGroupMembersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
@@ -278,8 +328,18 @@ export type QueryGroupMembersArgs = {
   groupId: Scalars['ID']['input'];
 };
 
+export type QueryHomeFeedArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
 
 export type QueryUserArgs = {
+  handle: Scalars['String']['input'];
+};
+
+export type QueryUserPostsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
   handle: Scalars['String']['input'];
 };
 
@@ -339,160 +399,740 @@ export type User = {
   tags: Array<Scalars['String']['output']>;
 };
 
-export type ViewerFieldsFragment = { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null };
+export type ViewerFieldsFragment = {
+  __typename?: 'User';
+  email: string | null;
+  createdAt: string;
+  id: string;
+  handle: string;
+  displayName: string;
+  bio: string | null;
+  tags: Array<string>;
+  consents: {
+    __typename?: 'Consents';
+    privacyNoticeVersion: string;
+    privacyNoticeAcceptedAt: string;
+    marketingOptIn: boolean;
+  } | null;
+  privateContact: {
+    __typename?: 'PrivateContact';
+    phone: string | null;
+    altEmail: string | null;
+    institution: string | null;
+    studentId: string | null;
+    emergencyContactName: string | null;
+    emergencyContactPhone: string | null;
+  } | null;
+  avatar: {
+    __typename?: 'Avatar';
+    assetId: string;
+    url256: string;
+    url512: string;
+    blurhash: string;
+  } | null;
+};
 
-export type AuthPayloadFieldsFragment = { __typename?: 'AuthPayload', accessToken: string, accessTokenExpiresAt: string, refreshToken: string | null, refreshTokenExpiresAt: string, user: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } };
+export type AuthPayloadFieldsFragment = {
+  __typename?: 'AuthPayload';
+  accessToken: string;
+  accessTokenExpiresAt: string;
+  refreshToken: string | null;
+  refreshTokenExpiresAt: string;
+  user: {
+    __typename?: 'User';
+    email: string | null;
+    createdAt: string;
+    id: string;
+    handle: string;
+    displayName: string;
+    bio: string | null;
+    tags: Array<string>;
+    consents: {
+      __typename?: 'Consents';
+      privacyNoticeVersion: string;
+      privacyNoticeAcceptedAt: string;
+      marketingOptIn: boolean;
+    } | null;
+    privateContact: {
+      __typename?: 'PrivateContact';
+      phone: string | null;
+      altEmail: string | null;
+      institution: string | null;
+      studentId: string | null;
+      emergencyContactName: string | null;
+      emergencyContactPhone: string | null;
+    } | null;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
 export type RegisterMutationVariables = Exact<{
   input: RegisterInput;
 }>;
 
-
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', accessToken: string, accessTokenExpiresAt: string, refreshToken: string | null, refreshTokenExpiresAt: string, user: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } } };
+export type RegisterMutation = {
+  __typename?: 'Mutation';
+  register: {
+    __typename?: 'AuthPayload';
+    accessToken: string;
+    accessTokenExpiresAt: string;
+    refreshToken: string | null;
+    refreshTokenExpiresAt: string;
+    user: {
+      __typename?: 'User';
+      email: string | null;
+      createdAt: string;
+      id: string;
+      handle: string;
+      displayName: string;
+      bio: string | null;
+      tags: Array<string>;
+      consents: {
+        __typename?: 'Consents';
+        privacyNoticeVersion: string;
+        privacyNoticeAcceptedAt: string;
+        marketingOptIn: boolean;
+      } | null;
+      privateContact: {
+        __typename?: 'PrivateContact';
+        phone: string | null;
+        altEmail: string | null;
+        institution: string | null;
+        studentId: string | null;
+        emergencyContactName: string | null;
+        emergencyContactPhone: string | null;
+      } | null;
+      avatar: {
+        __typename?: 'Avatar';
+        assetId: string;
+        url256: string;
+        url512: string;
+        blurhash: string;
+      } | null;
+    };
+  };
+};
 
 export type LoginMutationVariables = Exact<{
   input: LoginInput;
 }>;
 
-
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', accessToken: string, accessTokenExpiresAt: string, refreshToken: string | null, refreshTokenExpiresAt: string, user: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } } };
+export type LoginMutation = {
+  __typename?: 'Mutation';
+  login: {
+    __typename?: 'AuthPayload';
+    accessToken: string;
+    accessTokenExpiresAt: string;
+    refreshToken: string | null;
+    refreshTokenExpiresAt: string;
+    user: {
+      __typename?: 'User';
+      email: string | null;
+      createdAt: string;
+      id: string;
+      handle: string;
+      displayName: string;
+      bio: string | null;
+      tags: Array<string>;
+      consents: {
+        __typename?: 'Consents';
+        privacyNoticeVersion: string;
+        privacyNoticeAcceptedAt: string;
+        marketingOptIn: boolean;
+      } | null;
+      privateContact: {
+        __typename?: 'PrivateContact';
+        phone: string | null;
+        altEmail: string | null;
+        institution: string | null;
+        studentId: string | null;
+        emergencyContactName: string | null;
+        emergencyContactPhone: string | null;
+      } | null;
+      avatar: {
+        __typename?: 'Avatar';
+        assetId: string;
+        url256: string;
+        url512: string;
+        blurhash: string;
+      } | null;
+    };
+  };
+};
 
 export type RefreshTokenMutationVariables = Exact<{
   token?: InputMaybe<Scalars['String']['input']>;
 }>;
 
-
-export type RefreshTokenMutation = { __typename?: 'Mutation', refreshToken: { __typename?: 'AuthPayload', accessToken: string, accessTokenExpiresAt: string, refreshToken: string | null, refreshTokenExpiresAt: string, user: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } } };
+export type RefreshTokenMutation = {
+  __typename?: 'Mutation';
+  refreshToken: {
+    __typename?: 'AuthPayload';
+    accessToken: string;
+    accessTokenExpiresAt: string;
+    refreshToken: string | null;
+    refreshTokenExpiresAt: string;
+    user: {
+      __typename?: 'User';
+      email: string | null;
+      createdAt: string;
+      id: string;
+      handle: string;
+      displayName: string;
+      bio: string | null;
+      tags: Array<string>;
+      consents: {
+        __typename?: 'Consents';
+        privacyNoticeVersion: string;
+        privacyNoticeAcceptedAt: string;
+        marketingOptIn: boolean;
+      } | null;
+      privateContact: {
+        __typename?: 'PrivateContact';
+        phone: string | null;
+        altEmail: string | null;
+        institution: string | null;
+        studentId: string | null;
+        emergencyContactName: string | null;
+        emergencyContactPhone: string | null;
+      } | null;
+      avatar: {
+        __typename?: 'Avatar';
+        assetId: string;
+        url256: string;
+        url512: string;
+        blurhash: string;
+      } | null;
+    };
+  };
+};
 
 export type LogoutMutationVariables = Exact<{
   allDevices?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
+export type LogoutMutation = { __typename?: 'Mutation'; logout: boolean };
 
-export type LogoutMutation = { __typename?: 'Mutation', logout: boolean };
+export type MeQueryVariables = Exact<{ [key: string]: never }>;
 
-export type MeQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } };
+export type MeQuery = {
+  __typename?: 'Query';
+  me: {
+    __typename?: 'User';
+    email: string | null;
+    createdAt: string;
+    id: string;
+    handle: string;
+    displayName: string;
+    bio: string | null;
+    tags: Array<string>;
+    consents: {
+      __typename?: 'Consents';
+      privacyNoticeVersion: string;
+      privacyNoticeAcceptedAt: string;
+      marketingOptIn: boolean;
+    } | null;
+    privateContact: {
+      __typename?: 'PrivateContact';
+      phone: string | null;
+      altEmail: string | null;
+      institution: string | null;
+      studentId: string | null;
+      emergencyContactName: string | null;
+      emergencyContactPhone: string | null;
+    } | null;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
 export type RequestAvatarUploadMutationVariables = Exact<{
   mimeType: Scalars['String']['input'];
   sizeBytes: Scalars['Int']['input'];
 }>;
 
-
-export type RequestAvatarUploadMutation = { __typename?: 'Mutation', requestAvatarUpload: { __typename?: 'AvatarUploadTicket', assetId: string, uploadUrl: string, expiresAt: string, headers: Array<{ __typename?: 'UploadHeader', name: string, value: string }> } };
+export type RequestAvatarUploadMutation = {
+  __typename?: 'Mutation';
+  requestAvatarUpload: {
+    __typename?: 'AvatarUploadTicket';
+    assetId: string;
+    uploadUrl: string;
+    expiresAt: string;
+    headers: Array<{ __typename?: 'UploadHeader'; name: string; value: string }>;
+  };
+};
 
 export type ConfirmAvatarUploadMutationVariables = Exact<{
   assetId: Scalars['ID']['input'];
 }>;
 
+export type ConfirmAvatarUploadMutation = {
+  __typename?: 'Mutation';
+  confirmAvatarUpload: {
+    __typename?: 'MediaAsset';
+    id: string;
+    status: MediaStatus;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
-export type ConfirmAvatarUploadMutation = { __typename?: 'Mutation', confirmAvatarUpload: { __typename?: 'MediaAsset', id: string, status: MediaStatus, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } };
+export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never }>;
 
-export type RemoveAvatarMutationVariables = Exact<{ [key: string]: never; }>;
+export type RemoveAvatarMutation = {
+  __typename?: 'Mutation';
+  removeAvatar: {
+    __typename?: 'User';
+    email: string | null;
+    createdAt: string;
+    id: string;
+    handle: string;
+    displayName: string;
+    bio: string | null;
+    tags: Array<string>;
+    consents: {
+      __typename?: 'Consents';
+      privacyNoticeVersion: string;
+      privacyNoticeAcceptedAt: string;
+      marketingOptIn: boolean;
+    } | null;
+    privateContact: {
+      __typename?: 'PrivateContact';
+      phone: string | null;
+      altEmail: string | null;
+      institution: string | null;
+      studentId: string | null;
+      emergencyContactName: string | null;
+      emergencyContactPhone: string | null;
+    } | null;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
+export type PostAuthorFieldsFragment = {
+  __typename?: 'PublicUser';
+  id: string;
+  handle: string;
+  displayName: string;
+  avatar: {
+    __typename?: 'Avatar';
+    assetId: string;
+    url256: string;
+    url512: string;
+    blurhash: string;
+  } | null;
+};
 
-export type RemoveAvatarMutation = { __typename?: 'Mutation', removeAvatar: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } };
+export type PostFieldsFragment = {
+  __typename?: 'Post';
+  id: string;
+  title: string;
+  text: string;
+  visibility: PostVisibility;
+  createdAt: string;
+  viewerIsAuthor: boolean;
+  counts: { __typename?: 'PostCounts'; reactions: number; comments: number; shares: number };
+  author: {
+    __typename?: 'PublicUser';
+    id: string;
+    handle: string;
+    displayName: string;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
-export type AvatarFieldsFragment = { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string };
+export type HomeFeedQueryVariables = Exact<{
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+}>;
 
-export type PublicUserFieldsFragment = { __typename?: 'User', id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null };
+export type HomeFeedQuery = {
+  __typename?: 'Query';
+  homeFeed: {
+    __typename?: 'PostConnection';
+    edges: Array<{
+      __typename?: 'PostEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Post';
+        id: string;
+        title: string;
+        text: string;
+        visibility: PostVisibility;
+        createdAt: string;
+        viewerIsAuthor: boolean;
+        counts: { __typename?: 'PostCounts'; reactions: number; comments: number; shares: number };
+        author: {
+          __typename?: 'PublicUser';
+          id: string;
+          handle: string;
+          displayName: string;
+          avatar: {
+            __typename?: 'Avatar';
+            assetId: string;
+            url256: string;
+            url512: string;
+            blurhash: string;
+          } | null;
+        };
+      };
+    }>;
+    pageInfo: { __typename?: 'PageInfo'; hasNextPage: boolean; endCursor: string | null };
+  };
+};
 
-export type PrivateContactFieldsFragment = { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null };
+export type UserPostsQueryVariables = Exact<{
+  handle: Scalars['String']['input'];
+  first?: InputMaybe<Scalars['Int']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type UserPostsQuery = {
+  __typename?: 'Query';
+  userPosts: {
+    __typename?: 'PostConnection';
+    edges: Array<{
+      __typename?: 'PostEdge';
+      cursor: string;
+      node: {
+        __typename?: 'Post';
+        id: string;
+        title: string;
+        text: string;
+        visibility: PostVisibility;
+        createdAt: string;
+        viewerIsAuthor: boolean;
+        counts: { __typename?: 'PostCounts'; reactions: number; comments: number; shares: number };
+        author: {
+          __typename?: 'PublicUser';
+          id: string;
+          handle: string;
+          displayName: string;
+          avatar: {
+            __typename?: 'Avatar';
+            assetId: string;
+            url256: string;
+            url512: string;
+            blurhash: string;
+          } | null;
+        };
+      };
+    }>;
+    pageInfo: { __typename?: 'PageInfo'; hasNextPage: boolean; endCursor: string | null };
+  };
+};
+
+export type CreatePostMutationVariables = Exact<{
+  input: CreatePostInput;
+}>;
+
+export type CreatePostMutation = {
+  __typename?: 'Mutation';
+  createPost: {
+    __typename?: 'Post';
+    id: string;
+    title: string;
+    text: string;
+    visibility: PostVisibility;
+    createdAt: string;
+    viewerIsAuthor: boolean;
+    counts: { __typename?: 'PostCounts'; reactions: number; comments: number; shares: number };
+    author: {
+      __typename?: 'PublicUser';
+      id: string;
+      handle: string;
+      displayName: string;
+      avatar: {
+        __typename?: 'Avatar';
+        assetId: string;
+        url256: string;
+        url512: string;
+        blurhash: string;
+      } | null;
+    };
+  };
+};
+
+export type DeletePostMutationVariables = Exact<{
+  postId: Scalars['ID']['input'];
+}>;
+
+export type DeletePostMutation = { __typename?: 'Mutation'; deletePost: string };
+
+export type AvatarFieldsFragment = {
+  __typename?: 'Avatar';
+  assetId: string;
+  url256: string;
+  url512: string;
+  blurhash: string;
+};
+
+export type PublicUserFieldsFragment = {
+  __typename?: 'User';
+  id: string;
+  handle: string;
+  displayName: string;
+  bio: string | null;
+  tags: Array<string>;
+  avatar: {
+    __typename?: 'Avatar';
+    assetId: string;
+    url256: string;
+    url512: string;
+    blurhash: string;
+  } | null;
+};
+
+export type PrivateContactFieldsFragment = {
+  __typename?: 'PrivateContact';
+  phone: string | null;
+  altEmail: string | null;
+  institution: string | null;
+  studentId: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+};
 
 export type UserProfileQueryVariables = Exact<{
   handle: Scalars['String']['input'];
 }>;
 
+export type UserProfileQuery = {
+  __typename?: 'Query';
+  user: {
+    __typename?: 'User';
+    id: string;
+    handle: string;
+    displayName: string;
+    bio: string | null;
+    tags: Array<string>;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  } | null;
+};
 
-export type UserProfileQuery = { __typename?: 'Query', user: { __typename?: 'User', id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } | null };
+export type ProfileQualitiesQueryVariables = Exact<{ [key: string]: never }>;
 
-export type ProfileQualitiesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ProfileQualitiesQuery = { __typename?: 'Query', profileQualities: Array<{ __typename?: 'ProfileQuality', key: string }> };
+export type ProfileQualitiesQuery = {
+  __typename?: 'Query';
+  profileQualities: Array<{ __typename?: 'ProfileQuality'; key: string }>;
+};
 
 export type UpdateProfileMutationVariables = Exact<{
   input: UpdateProfileInput;
 }>;
 
-
-export type UpdateProfileMutation = { __typename?: 'Mutation', updateProfile: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } };
+export type UpdateProfileMutation = {
+  __typename?: 'Mutation';
+  updateProfile: {
+    __typename?: 'User';
+    email: string | null;
+    createdAt: string;
+    id: string;
+    handle: string;
+    displayName: string;
+    bio: string | null;
+    tags: Array<string>;
+    consents: {
+      __typename?: 'Consents';
+      privacyNoticeVersion: string;
+      privacyNoticeAcceptedAt: string;
+      marketingOptIn: boolean;
+    } | null;
+    privateContact: {
+      __typename?: 'PrivateContact';
+      phone: string | null;
+      altEmail: string | null;
+      institution: string | null;
+      studentId: string | null;
+      emergencyContactName: string | null;
+      emergencyContactPhone: string | null;
+    } | null;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
 export type UpdatePrivateContactMutationVariables = Exact<{
   input: UpdatePrivateContactInput;
 }>;
 
-
-export type UpdatePrivateContactMutation = { __typename?: 'Mutation', updatePrivateContact: { __typename?: 'User', email: string | null, createdAt: string, id: string, handle: string, displayName: string, bio: string | null, tags: Array<string>, consents: { __typename?: 'Consents', privacyNoticeVersion: string, privacyNoticeAcceptedAt: string, marketingOptIn: boolean } | null, privateContact: { __typename?: 'PrivateContact', phone: string | null, altEmail: string | null, institution: string | null, studentId: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null } | null, avatar: { __typename?: 'Avatar', assetId: string, url256: string, url512: string, blurhash: string } | null } };
+export type UpdatePrivateContactMutation = {
+  __typename?: 'Mutation';
+  updatePrivateContact: {
+    __typename?: 'User';
+    email: string | null;
+    createdAt: string;
+    id: string;
+    handle: string;
+    displayName: string;
+    bio: string | null;
+    tags: Array<string>;
+    consents: {
+      __typename?: 'Consents';
+      privacyNoticeVersion: string;
+      privacyNoticeAcceptedAt: string;
+      marketingOptIn: boolean;
+    } | null;
+    privateContact: {
+      __typename?: 'PrivateContact';
+      phone: string | null;
+      altEmail: string | null;
+      institution: string | null;
+      studentId: string | null;
+      emergencyContactName: string | null;
+      emergencyContactPhone: string | null;
+    } | null;
+    avatar: {
+      __typename?: 'Avatar';
+      assetId: string;
+      url256: string;
+      url512: string;
+      blurhash: string;
+    } | null;
+  };
+};
 
 export const AvatarFieldsFragmentDoc = gql`
-    fragment AvatarFields on Avatar {
-  assetId
-  url256
-  url512
-  blurhash
-}
-    `;
+  fragment AvatarFields on Avatar {
+    assetId
+    url256
+    url512
+    blurhash
+  }
+`;
 export const PublicUserFieldsFragmentDoc = gql`
-    fragment PublicUserFields on User {
-  id
-  handle
-  displayName
-  bio
-  tags
-  avatar {
-    ...AvatarFields
+  fragment PublicUserFields on User {
+    id
+    handle
+    displayName
+    bio
+    tags
+    avatar {
+      ...AvatarFields
+    }
   }
-}
-    ${AvatarFieldsFragmentDoc}`;
+  ${AvatarFieldsFragmentDoc}
+`;
 export const PrivateContactFieldsFragmentDoc = gql`
-    fragment PrivateContactFields on PrivateContact {
-  phone
-  altEmail
-  institution
-  studentId
-  emergencyContactName
-  emergencyContactPhone
-}
-    `;
+  fragment PrivateContactFields on PrivateContact {
+    phone
+    altEmail
+    institution
+    studentId
+    emergencyContactName
+    emergencyContactPhone
+  }
+`;
 export const ViewerFieldsFragmentDoc = gql`
-    fragment ViewerFields on User {
-  ...PublicUserFields
-  email
-  createdAt
-  consents {
-    privacyNoticeVersion
-    privacyNoticeAcceptedAt
-    marketingOptIn
+  fragment ViewerFields on User {
+    ...PublicUserFields
+    email
+    createdAt
+    consents {
+      privacyNoticeVersion
+      privacyNoticeAcceptedAt
+      marketingOptIn
+    }
+    privateContact {
+      ...PrivateContactFields
+    }
   }
-  privateContact {
-    ...PrivateContactFields
-  }
-}
-    ${PublicUserFieldsFragmentDoc}
-${PrivateContactFieldsFragmentDoc}`;
+  ${PublicUserFieldsFragmentDoc}
+  ${PrivateContactFieldsFragmentDoc}
+`;
 export const AuthPayloadFieldsFragmentDoc = gql`
-    fragment AuthPayloadFields on AuthPayload {
-  accessToken
-  accessTokenExpiresAt
-  refreshToken
-  refreshTokenExpiresAt
-  user {
-    ...ViewerFields
+  fragment AuthPayloadFields on AuthPayload {
+    accessToken
+    accessTokenExpiresAt
+    refreshToken
+    refreshTokenExpiresAt
+    user {
+      ...ViewerFields
+    }
   }
-}
-    ${ViewerFieldsFragmentDoc}`;
+  ${ViewerFieldsFragmentDoc}
+`;
+export const PostAuthorFieldsFragmentDoc = gql`
+  fragment PostAuthorFields on PublicUser {
+    id
+    handle
+    displayName
+    avatar {
+      ...AvatarFields
+    }
+  }
+  ${AvatarFieldsFragmentDoc}
+`;
+export const PostFieldsFragmentDoc = gql`
+  fragment PostFields on Post {
+    id
+    title
+    text
+    visibility
+    createdAt
+    viewerIsAuthor
+    counts {
+      reactions
+      comments
+      shares
+    }
+    author {
+      ...PostAuthorFields
+    }
+  }
+  ${PostAuthorFieldsFragmentDoc}
+`;
 export const RegisterDocument = gql`
-    mutation Register($input: RegisterInput!) {
-  register(input: $input) {
-    ...AuthPayloadFields
+  mutation Register($input: RegisterInput!) {
+    register(input: $input) {
+      ...AuthPayloadFields
+    }
   }
-}
-    ${AuthPayloadFieldsFragmentDoc}`;
-export type RegisterMutationFn = Apollo.MutationFunction<RegisterMutation, RegisterMutationVariables>;
+  ${AuthPayloadFieldsFragmentDoc}
+`;
+export type RegisterMutationFn = Apollo.MutationFunction<
+  RegisterMutation,
+  RegisterMutationVariables
+>;
 
 /**
  * __useRegisterMutation__
@@ -511,20 +1151,26 @@ export type RegisterMutationFn = Apollo.MutationFunction<RegisterMutation, Regis
  *   },
  * });
  */
-export function useRegisterMutation(baseOptions?: Apollo.MutationHookOptions<RegisterMutation, RegisterMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<RegisterMutation, RegisterMutationVariables>(RegisterDocument, options);
-      }
+export function useRegisterMutation(
+  baseOptions?: Apollo.MutationHookOptions<RegisterMutation, RegisterMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<RegisterMutation, RegisterMutationVariables>(RegisterDocument, options);
+}
 export type RegisterMutationHookResult = ReturnType<typeof useRegisterMutation>;
 export type RegisterMutationResult = Apollo.MutationResult<RegisterMutation>;
-export type RegisterMutationOptions = Apollo.BaseMutationOptions<RegisterMutation, RegisterMutationVariables>;
+export type RegisterMutationOptions = Apollo.BaseMutationOptions<
+  RegisterMutation,
+  RegisterMutationVariables
+>;
 export const LoginDocument = gql`
-    mutation Login($input: LoginInput!) {
-  login(input: $input) {
-    ...AuthPayloadFields
+  mutation Login($input: LoginInput!) {
+    login(input: $input) {
+      ...AuthPayloadFields
+    }
   }
-}
-    ${AuthPayloadFieldsFragmentDoc}`;
+  ${AuthPayloadFieldsFragmentDoc}
+`;
 export type LoginMutationFn = Apollo.MutationFunction<LoginMutation, LoginMutationVariables>;
 
 /**
@@ -544,21 +1190,30 @@ export type LoginMutationFn = Apollo.MutationFunction<LoginMutation, LoginMutati
  *   },
  * });
  */
-export function useLoginMutation(baseOptions?: Apollo.MutationHookOptions<LoginMutation, LoginMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<LoginMutation, LoginMutationVariables>(LoginDocument, options);
-      }
+export function useLoginMutation(
+  baseOptions?: Apollo.MutationHookOptions<LoginMutation, LoginMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<LoginMutation, LoginMutationVariables>(LoginDocument, options);
+}
 export type LoginMutationHookResult = ReturnType<typeof useLoginMutation>;
 export type LoginMutationResult = Apollo.MutationResult<LoginMutation>;
-export type LoginMutationOptions = Apollo.BaseMutationOptions<LoginMutation, LoginMutationVariables>;
+export type LoginMutationOptions = Apollo.BaseMutationOptions<
+  LoginMutation,
+  LoginMutationVariables
+>;
 export const RefreshTokenDocument = gql`
-    mutation RefreshToken($token: String) {
-  refreshToken(token: $token) {
-    ...AuthPayloadFields
+  mutation RefreshToken($token: String) {
+    refreshToken(token: $token) {
+      ...AuthPayloadFields
+    }
   }
-}
-    ${AuthPayloadFieldsFragmentDoc}`;
-export type RefreshTokenMutationFn = Apollo.MutationFunction<RefreshTokenMutation, RefreshTokenMutationVariables>;
+  ${AuthPayloadFieldsFragmentDoc}
+`;
+export type RefreshTokenMutationFn = Apollo.MutationFunction<
+  RefreshTokenMutation,
+  RefreshTokenMutationVariables
+>;
 
 /**
  * __useRefreshTokenMutation__
@@ -577,18 +1232,26 @@ export type RefreshTokenMutationFn = Apollo.MutationFunction<RefreshTokenMutatio
  *   },
  * });
  */
-export function useRefreshTokenMutation(baseOptions?: Apollo.MutationHookOptions<RefreshTokenMutation, RefreshTokenMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<RefreshTokenMutation, RefreshTokenMutationVariables>(RefreshTokenDocument, options);
-      }
+export function useRefreshTokenMutation(
+  baseOptions?: Apollo.MutationHookOptions<RefreshTokenMutation, RefreshTokenMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<RefreshTokenMutation, RefreshTokenMutationVariables>(
+    RefreshTokenDocument,
+    options,
+  );
+}
 export type RefreshTokenMutationHookResult = ReturnType<typeof useRefreshTokenMutation>;
 export type RefreshTokenMutationResult = Apollo.MutationResult<RefreshTokenMutation>;
-export type RefreshTokenMutationOptions = Apollo.BaseMutationOptions<RefreshTokenMutation, RefreshTokenMutationVariables>;
+export type RefreshTokenMutationOptions = Apollo.BaseMutationOptions<
+  RefreshTokenMutation,
+  RefreshTokenMutationVariables
+>;
 export const LogoutDocument = gql`
-    mutation Logout($allDevices: Boolean = false) {
-  logout(allDevices: $allDevices)
-}
-    `;
+  mutation Logout($allDevices: Boolean = false) {
+    logout(allDevices: $allDevices)
+  }
+`;
 export type LogoutMutationFn = Apollo.MutationFunction<LogoutMutation, LogoutMutationVariables>;
 
 /**
@@ -608,20 +1271,26 @@ export type LogoutMutationFn = Apollo.MutationFunction<LogoutMutation, LogoutMut
  *   },
  * });
  */
-export function useLogoutMutation(baseOptions?: Apollo.MutationHookOptions<LogoutMutation, LogoutMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<LogoutMutation, LogoutMutationVariables>(LogoutDocument, options);
-      }
+export function useLogoutMutation(
+  baseOptions?: Apollo.MutationHookOptions<LogoutMutation, LogoutMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<LogoutMutation, LogoutMutationVariables>(LogoutDocument, options);
+}
 export type LogoutMutationHookResult = ReturnType<typeof useLogoutMutation>;
 export type LogoutMutationResult = Apollo.MutationResult<LogoutMutation>;
-export type LogoutMutationOptions = Apollo.BaseMutationOptions<LogoutMutation, LogoutMutationVariables>;
+export type LogoutMutationOptions = Apollo.BaseMutationOptions<
+  LogoutMutation,
+  LogoutMutationVariables
+>;
 export const MeDocument = gql`
-    query Me {
-  me {
-    ...ViewerFields
+  query Me {
+    me {
+      ...ViewerFields
+    }
   }
-}
-    ${ViewerFieldsFragmentDoc}`;
+  ${ViewerFieldsFragmentDoc}
+`;
 
 /**
  * __useMeQuery__
@@ -639,38 +1308,50 @@ export const MeDocument = gql`
  * });
  */
 export function useMeQuery(baseOptions?: Apollo.QueryHookOptions<MeQuery, MeQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-      }
-export function useMeLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MeQuery, MeQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-        }
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<MeQuery, MeQueryVariables>(MeDocument, options);
+}
+export function useMeLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<MeQuery, MeQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<MeQuery, MeQueryVariables>(MeDocument, options);
+}
 // @ts-ignore
-export function useMeSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>): Apollo.UseSuspenseQueryResult<MeQuery, MeQueryVariables>;
-export function useMeSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>): Apollo.UseSuspenseQueryResult<MeQuery | undefined, MeQueryVariables>;
-export function useMeSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<MeQuery, MeQueryVariables>(MeDocument, options);
-        }
+export function useMeSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>,
+): Apollo.UseSuspenseQueryResult<MeQuery, MeQueryVariables>;
+export function useMeSuspenseQuery(
+  baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>,
+): Apollo.UseSuspenseQueryResult<MeQuery | undefined, MeQueryVariables>;
+export function useMeSuspenseQuery(
+  baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<MeQuery, MeQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<MeQuery, MeQueryVariables>(MeDocument, options);
+}
 export type MeQueryHookResult = ReturnType<typeof useMeQuery>;
 export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
 export type MeSuspenseQueryHookResult = ReturnType<typeof useMeSuspenseQuery>;
 export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const RequestAvatarUploadDocument = gql`
-    mutation RequestAvatarUpload($mimeType: String!, $sizeBytes: Int!) {
-  requestAvatarUpload(mimeType: $mimeType, sizeBytes: $sizeBytes) {
-    assetId
-    uploadUrl
-    expiresAt
-    headers {
-      name
-      value
+  mutation RequestAvatarUpload($mimeType: String!, $sizeBytes: Int!) {
+    requestAvatarUpload(mimeType: $mimeType, sizeBytes: $sizeBytes) {
+      assetId
+      uploadUrl
+      expiresAt
+      headers {
+        name
+        value
+      }
     }
   }
-}
-    `;
-export type RequestAvatarUploadMutationFn = Apollo.MutationFunction<RequestAvatarUploadMutation, RequestAvatarUploadMutationVariables>;
+`;
+export type RequestAvatarUploadMutationFn = Apollo.MutationFunction<
+  RequestAvatarUploadMutation,
+  RequestAvatarUploadMutationVariables
+>;
 
 /**
  * __useRequestAvatarUploadMutation__
@@ -690,25 +1371,42 @@ export type RequestAvatarUploadMutationFn = Apollo.MutationFunction<RequestAvata
  *   },
  * });
  */
-export function useRequestAvatarUploadMutation(baseOptions?: Apollo.MutationHookOptions<RequestAvatarUploadMutation, RequestAvatarUploadMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<RequestAvatarUploadMutation, RequestAvatarUploadMutationVariables>(RequestAvatarUploadDocument, options);
-      }
-export type RequestAvatarUploadMutationHookResult = ReturnType<typeof useRequestAvatarUploadMutation>;
+export function useRequestAvatarUploadMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    RequestAvatarUploadMutation,
+    RequestAvatarUploadMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<RequestAvatarUploadMutation, RequestAvatarUploadMutationVariables>(
+    RequestAvatarUploadDocument,
+    options,
+  );
+}
+export type RequestAvatarUploadMutationHookResult = ReturnType<
+  typeof useRequestAvatarUploadMutation
+>;
 export type RequestAvatarUploadMutationResult = Apollo.MutationResult<RequestAvatarUploadMutation>;
-export type RequestAvatarUploadMutationOptions = Apollo.BaseMutationOptions<RequestAvatarUploadMutation, RequestAvatarUploadMutationVariables>;
+export type RequestAvatarUploadMutationOptions = Apollo.BaseMutationOptions<
+  RequestAvatarUploadMutation,
+  RequestAvatarUploadMutationVariables
+>;
 export const ConfirmAvatarUploadDocument = gql`
-    mutation ConfirmAvatarUpload($assetId: ID!) {
-  confirmAvatarUpload(assetId: $assetId) {
-    id
-    status
-    avatar {
-      ...AvatarFields
+  mutation ConfirmAvatarUpload($assetId: ID!) {
+    confirmAvatarUpload(assetId: $assetId) {
+      id
+      status
+      avatar {
+        ...AvatarFields
+      }
     }
   }
-}
-    ${AvatarFieldsFragmentDoc}`;
-export type ConfirmAvatarUploadMutationFn = Apollo.MutationFunction<ConfirmAvatarUploadMutation, ConfirmAvatarUploadMutationVariables>;
+  ${AvatarFieldsFragmentDoc}
+`;
+export type ConfirmAvatarUploadMutationFn = Apollo.MutationFunction<
+  ConfirmAvatarUploadMutation,
+  ConfirmAvatarUploadMutationVariables
+>;
 
 /**
  * __useConfirmAvatarUploadMutation__
@@ -727,21 +1425,38 @@ export type ConfirmAvatarUploadMutationFn = Apollo.MutationFunction<ConfirmAvata
  *   },
  * });
  */
-export function useConfirmAvatarUploadMutation(baseOptions?: Apollo.MutationHookOptions<ConfirmAvatarUploadMutation, ConfirmAvatarUploadMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<ConfirmAvatarUploadMutation, ConfirmAvatarUploadMutationVariables>(ConfirmAvatarUploadDocument, options);
-      }
-export type ConfirmAvatarUploadMutationHookResult = ReturnType<typeof useConfirmAvatarUploadMutation>;
-export type ConfirmAvatarUploadMutationResult = Apollo.MutationResult<ConfirmAvatarUploadMutation>;
-export type ConfirmAvatarUploadMutationOptions = Apollo.BaseMutationOptions<ConfirmAvatarUploadMutation, ConfirmAvatarUploadMutationVariables>;
-export const RemoveAvatarDocument = gql`
-    mutation RemoveAvatar {
-  removeAvatar {
-    ...ViewerFields
-  }
+export function useConfirmAvatarUploadMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    ConfirmAvatarUploadMutation,
+    ConfirmAvatarUploadMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<ConfirmAvatarUploadMutation, ConfirmAvatarUploadMutationVariables>(
+    ConfirmAvatarUploadDocument,
+    options,
+  );
 }
-    ${ViewerFieldsFragmentDoc}`;
-export type RemoveAvatarMutationFn = Apollo.MutationFunction<RemoveAvatarMutation, RemoveAvatarMutationVariables>;
+export type ConfirmAvatarUploadMutationHookResult = ReturnType<
+  typeof useConfirmAvatarUploadMutation
+>;
+export type ConfirmAvatarUploadMutationResult = Apollo.MutationResult<ConfirmAvatarUploadMutation>;
+export type ConfirmAvatarUploadMutationOptions = Apollo.BaseMutationOptions<
+  ConfirmAvatarUploadMutation,
+  ConfirmAvatarUploadMutationVariables
+>;
+export const RemoveAvatarDocument = gql`
+  mutation RemoveAvatar {
+    removeAvatar {
+      ...ViewerFields
+    }
+  }
+  ${ViewerFieldsFragmentDoc}
+`;
+export type RemoveAvatarMutationFn = Apollo.MutationFunction<
+  RemoveAvatarMutation,
+  RemoveAvatarMutationVariables
+>;
 
 /**
  * __useRemoveAvatarMutation__
@@ -759,20 +1474,255 @@ export type RemoveAvatarMutationFn = Apollo.MutationFunction<RemoveAvatarMutatio
  *   },
  * });
  */
-export function useRemoveAvatarMutation(baseOptions?: Apollo.MutationHookOptions<RemoveAvatarMutation, RemoveAvatarMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<RemoveAvatarMutation, RemoveAvatarMutationVariables>(RemoveAvatarDocument, options);
-      }
+export function useRemoveAvatarMutation(
+  baseOptions?: Apollo.MutationHookOptions<RemoveAvatarMutation, RemoveAvatarMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<RemoveAvatarMutation, RemoveAvatarMutationVariables>(
+    RemoveAvatarDocument,
+    options,
+  );
+}
 export type RemoveAvatarMutationHookResult = ReturnType<typeof useRemoveAvatarMutation>;
 export type RemoveAvatarMutationResult = Apollo.MutationResult<RemoveAvatarMutation>;
-export type RemoveAvatarMutationOptions = Apollo.BaseMutationOptions<RemoveAvatarMutation, RemoveAvatarMutationVariables>;
-export const UserProfileDocument = gql`
-    query UserProfile($handle: String!) {
-  user(handle: $handle) {
-    ...PublicUserFields
+export type RemoveAvatarMutationOptions = Apollo.BaseMutationOptions<
+  RemoveAvatarMutation,
+  RemoveAvatarMutationVariables
+>;
+export const HomeFeedDocument = gql`
+  query HomeFeed($first: Int = 20, $after: String) {
+    homeFeed(first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          ...PostFields
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
   }
+  ${PostFieldsFragmentDoc}
+`;
+
+/**
+ * __useHomeFeedQuery__
+ *
+ * To run a query within a React component, call `useHomeFeedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeFeedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeFeedQuery({
+ *   variables: {
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useHomeFeedQuery(
+  baseOptions?: Apollo.QueryHookOptions<HomeFeedQuery, HomeFeedQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<HomeFeedQuery, HomeFeedQueryVariables>(HomeFeedDocument, options);
 }
-    ${PublicUserFieldsFragmentDoc}`;
+export function useHomeFeedLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<HomeFeedQuery, HomeFeedQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<HomeFeedQuery, HomeFeedQueryVariables>(HomeFeedDocument, options);
+}
+// @ts-ignore
+export function useHomeFeedSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<HomeFeedQuery, HomeFeedQueryVariables>,
+): Apollo.UseSuspenseQueryResult<HomeFeedQuery, HomeFeedQueryVariables>;
+export function useHomeFeedSuspenseQuery(
+  baseOptions?:
+    Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<HomeFeedQuery, HomeFeedQueryVariables>,
+): Apollo.UseSuspenseQueryResult<HomeFeedQuery | undefined, HomeFeedQueryVariables>;
+export function useHomeFeedSuspenseQuery(
+  baseOptions?:
+    Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<HomeFeedQuery, HomeFeedQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<HomeFeedQuery, HomeFeedQueryVariables>(HomeFeedDocument, options);
+}
+export type HomeFeedQueryHookResult = ReturnType<typeof useHomeFeedQuery>;
+export type HomeFeedLazyQueryHookResult = ReturnType<typeof useHomeFeedLazyQuery>;
+export type HomeFeedSuspenseQueryHookResult = ReturnType<typeof useHomeFeedSuspenseQuery>;
+export type HomeFeedQueryResult = Apollo.QueryResult<HomeFeedQuery, HomeFeedQueryVariables>;
+export const UserPostsDocument = gql`
+  query UserPosts($handle: String!, $first: Int = 20, $after: String) {
+    userPosts(handle: $handle, first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          ...PostFields
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+  ${PostFieldsFragmentDoc}
+`;
+
+/**
+ * __useUserPostsQuery__
+ *
+ * To run a query within a React component, call `useUserPostsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUserPostsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUserPostsQuery({
+ *   variables: {
+ *      handle: // value for 'handle'
+ *      first: // value for 'first'
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useUserPostsQuery(
+  baseOptions: Apollo.QueryHookOptions<UserPostsQuery, UserPostsQueryVariables> &
+    ({ variables: UserPostsQueryVariables; skip?: boolean } | { skip: boolean }),
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<UserPostsQuery, UserPostsQueryVariables>(UserPostsDocument, options);
+}
+export function useUserPostsLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<UserPostsQuery, UserPostsQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<UserPostsQuery, UserPostsQueryVariables>(UserPostsDocument, options);
+}
+// @ts-ignore
+export function useUserPostsSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<UserPostsQuery, UserPostsQueryVariables>,
+): Apollo.UseSuspenseQueryResult<UserPostsQuery, UserPostsQueryVariables>;
+export function useUserPostsSuspenseQuery(
+  baseOptions?:
+    Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<UserPostsQuery, UserPostsQueryVariables>,
+): Apollo.UseSuspenseQueryResult<UserPostsQuery | undefined, UserPostsQueryVariables>;
+export function useUserPostsSuspenseQuery(
+  baseOptions?:
+    Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<UserPostsQuery, UserPostsQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<UserPostsQuery, UserPostsQueryVariables>(
+    UserPostsDocument,
+    options,
+  );
+}
+export type UserPostsQueryHookResult = ReturnType<typeof useUserPostsQuery>;
+export type UserPostsLazyQueryHookResult = ReturnType<typeof useUserPostsLazyQuery>;
+export type UserPostsSuspenseQueryHookResult = ReturnType<typeof useUserPostsSuspenseQuery>;
+export type UserPostsQueryResult = Apollo.QueryResult<UserPostsQuery, UserPostsQueryVariables>;
+export const CreatePostDocument = gql`
+  mutation CreatePost($input: CreatePostInput!) {
+    createPost(input: $input) {
+      ...PostFields
+    }
+  }
+  ${PostFieldsFragmentDoc}
+`;
+export type CreatePostMutationFn = Apollo.MutationFunction<
+  CreatePostMutation,
+  CreatePostMutationVariables
+>;
+
+/**
+ * __useCreatePostMutation__
+ *
+ * To run a mutation, you first call `useCreatePostMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePostMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createPostMutation, { data, loading, error }] = useCreatePostMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreatePostMutation(
+  baseOptions?: Apollo.MutationHookOptions<CreatePostMutation, CreatePostMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<CreatePostMutation, CreatePostMutationVariables>(
+    CreatePostDocument,
+    options,
+  );
+}
+export type CreatePostMutationHookResult = ReturnType<typeof useCreatePostMutation>;
+export type CreatePostMutationResult = Apollo.MutationResult<CreatePostMutation>;
+export type CreatePostMutationOptions = Apollo.BaseMutationOptions<
+  CreatePostMutation,
+  CreatePostMutationVariables
+>;
+export const DeletePostDocument = gql`
+  mutation DeletePost($postId: ID!) {
+    deletePost(postId: $postId)
+  }
+`;
+export type DeletePostMutationFn = Apollo.MutationFunction<
+  DeletePostMutation,
+  DeletePostMutationVariables
+>;
+
+/**
+ * __useDeletePostMutation__
+ *
+ * To run a mutation, you first call `useDeletePostMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeletePostMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deletePostMutation, { data, loading, error }] = useDeletePostMutation({
+ *   variables: {
+ *      postId: // value for 'postId'
+ *   },
+ * });
+ */
+export function useDeletePostMutation(
+  baseOptions?: Apollo.MutationHookOptions<DeletePostMutation, DeletePostMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<DeletePostMutation, DeletePostMutationVariables>(
+    DeletePostDocument,
+    options,
+  );
+}
+export type DeletePostMutationHookResult = ReturnType<typeof useDeletePostMutation>;
+export type DeletePostMutationResult = Apollo.MutationResult<DeletePostMutation>;
+export type DeletePostMutationOptions = Apollo.BaseMutationOptions<
+  DeletePostMutation,
+  DeletePostMutationVariables
+>;
+export const UserProfileDocument = gql`
+  query UserProfile($handle: String!) {
+    user(handle: $handle) {
+      ...PublicUserFields
+    }
+  }
+  ${PublicUserFieldsFragmentDoc}
+`;
 
 /**
  * __useUserProfileQuery__
@@ -790,32 +1740,55 @@ export const UserProfileDocument = gql`
  *   },
  * });
  */
-export function useUserProfileQuery(baseOptions: Apollo.QueryHookOptions<UserProfileQuery, UserProfileQueryVariables> & ({ variables: UserProfileQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<UserProfileQuery, UserProfileQueryVariables>(UserProfileDocument, options);
-      }
-export function useUserProfileLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<UserProfileQuery, UserProfileQueryVariables>(UserProfileDocument, options);
-        }
+export function useUserProfileQuery(
+  baseOptions: Apollo.QueryHookOptions<UserProfileQuery, UserProfileQueryVariables> &
+    ({ variables: UserProfileQueryVariables; skip?: boolean } | { skip: boolean }),
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<UserProfileQuery, UserProfileQueryVariables>(UserProfileDocument, options);
+}
+export function useUserProfileLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<UserProfileQuery, UserProfileQueryVariables>(
+    UserProfileDocument,
+    options,
+  );
+}
 // @ts-ignore
-export function useUserProfileSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>): Apollo.UseSuspenseQueryResult<UserProfileQuery, UserProfileQueryVariables>;
-export function useUserProfileSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>): Apollo.UseSuspenseQueryResult<UserProfileQuery | undefined, UserProfileQueryVariables>;
-export function useUserProfileSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<UserProfileQuery, UserProfileQueryVariables>(UserProfileDocument, options);
-        }
+export function useUserProfileSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>,
+): Apollo.UseSuspenseQueryResult<UserProfileQuery, UserProfileQueryVariables>;
+export function useUserProfileSuspenseQuery(
+  baseOptions?:
+    Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>,
+): Apollo.UseSuspenseQueryResult<UserProfileQuery | undefined, UserProfileQueryVariables>;
+export function useUserProfileSuspenseQuery(
+  baseOptions?:
+    Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<UserProfileQuery, UserProfileQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<UserProfileQuery, UserProfileQueryVariables>(
+    UserProfileDocument,
+    options,
+  );
+}
 export type UserProfileQueryHookResult = ReturnType<typeof useUserProfileQuery>;
 export type UserProfileLazyQueryHookResult = ReturnType<typeof useUserProfileLazyQuery>;
 export type UserProfileSuspenseQueryHookResult = ReturnType<typeof useUserProfileSuspenseQuery>;
-export type UserProfileQueryResult = Apollo.QueryResult<UserProfileQuery, UserProfileQueryVariables>;
+export type UserProfileQueryResult = Apollo.QueryResult<
+  UserProfileQuery,
+  UserProfileQueryVariables
+>;
 export const ProfileQualitiesDocument = gql`
-    query ProfileQualities {
-  profileQualities {
-    key
+  query ProfileQualities {
+    profileQualities {
+      key
+    }
   }
-}
-    `;
+`;
 
 /**
  * __useProfileQualitiesQuery__
@@ -832,33 +1805,69 @@ export const ProfileQualitiesDocument = gql`
  *   },
  * });
  */
-export function useProfileQualitiesQuery(baseOptions?: Apollo.QueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>(ProfileQualitiesDocument, options);
-      }
-export function useProfileQualitiesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>(ProfileQualitiesDocument, options);
-        }
+export function useProfileQualitiesQuery(
+  baseOptions?: Apollo.QueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useQuery<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>(
+    ProfileQualitiesDocument,
+    options,
+  );
+}
+export function useProfileQualitiesLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useLazyQuery<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>(
+    ProfileQualitiesDocument,
+    options,
+  );
+}
 // @ts-ignore
-export function useProfileQualitiesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>): Apollo.UseSuspenseQueryResult<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>;
-export function useProfileQualitiesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>): Apollo.UseSuspenseQueryResult<ProfileQualitiesQuery | undefined, ProfileQualitiesQueryVariables>;
-export function useProfileQualitiesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>) {
-          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>(ProfileQualitiesDocument, options);
-        }
+export function useProfileQualitiesSuspenseQuery(
+  baseOptions?: Apollo.SuspenseQueryHookOptions<
+    ProfileQualitiesQuery,
+    ProfileQualitiesQueryVariables
+  >,
+): Apollo.UseSuspenseQueryResult<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>;
+export function useProfileQualitiesSuspenseQuery(
+  baseOptions?:
+    | Apollo.SkipToken
+    | Apollo.SuspenseQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>,
+): Apollo.UseSuspenseQueryResult<ProfileQualitiesQuery | undefined, ProfileQualitiesQueryVariables>;
+export function useProfileQualitiesSuspenseQuery(
+  baseOptions?:
+    | Apollo.SkipToken
+    | Apollo.SuspenseQueryHookOptions<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>,
+) {
+  const options =
+    baseOptions === Apollo.skipToken ? baseOptions : { ...defaultOptions, ...baseOptions };
+  return Apollo.useSuspenseQuery<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>(
+    ProfileQualitiesDocument,
+    options,
+  );
+}
 export type ProfileQualitiesQueryHookResult = ReturnType<typeof useProfileQualitiesQuery>;
 export type ProfileQualitiesLazyQueryHookResult = ReturnType<typeof useProfileQualitiesLazyQuery>;
-export type ProfileQualitiesSuspenseQueryHookResult = ReturnType<typeof useProfileQualitiesSuspenseQuery>;
-export type ProfileQualitiesQueryResult = Apollo.QueryResult<ProfileQualitiesQuery, ProfileQualitiesQueryVariables>;
+export type ProfileQualitiesSuspenseQueryHookResult = ReturnType<
+  typeof useProfileQualitiesSuspenseQuery
+>;
+export type ProfileQualitiesQueryResult = Apollo.QueryResult<
+  ProfileQualitiesQuery,
+  ProfileQualitiesQueryVariables
+>;
 export const UpdateProfileDocument = gql`
-    mutation UpdateProfile($input: UpdateProfileInput!) {
-  updateProfile(input: $input) {
-    ...ViewerFields
+  mutation UpdateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      ...ViewerFields
+    }
   }
-}
-    ${ViewerFieldsFragmentDoc}`;
-export type UpdateProfileMutationFn = Apollo.MutationFunction<UpdateProfileMutation, UpdateProfileMutationVariables>;
+  ${ViewerFieldsFragmentDoc}
+`;
+export type UpdateProfileMutationFn = Apollo.MutationFunction<
+  UpdateProfileMutation,
+  UpdateProfileMutationVariables
+>;
 
 /**
  * __useUpdateProfileMutation__
@@ -877,21 +1886,33 @@ export type UpdateProfileMutationFn = Apollo.MutationFunction<UpdateProfileMutat
  *   },
  * });
  */
-export function useUpdateProfileMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProfileMutation, UpdateProfileMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<UpdateProfileMutation, UpdateProfileMutationVariables>(UpdateProfileDocument, options);
-      }
+export function useUpdateProfileMutation(
+  baseOptions?: Apollo.MutationHookOptions<UpdateProfileMutation, UpdateProfileMutationVariables>,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<UpdateProfileMutation, UpdateProfileMutationVariables>(
+    UpdateProfileDocument,
+    options,
+  );
+}
 export type UpdateProfileMutationHookResult = ReturnType<typeof useUpdateProfileMutation>;
 export type UpdateProfileMutationResult = Apollo.MutationResult<UpdateProfileMutation>;
-export type UpdateProfileMutationOptions = Apollo.BaseMutationOptions<UpdateProfileMutation, UpdateProfileMutationVariables>;
+export type UpdateProfileMutationOptions = Apollo.BaseMutationOptions<
+  UpdateProfileMutation,
+  UpdateProfileMutationVariables
+>;
 export const UpdatePrivateContactDocument = gql`
-    mutation UpdatePrivateContact($input: UpdatePrivateContactInput!) {
-  updatePrivateContact(input: $input) {
-    ...ViewerFields
+  mutation UpdatePrivateContact($input: UpdatePrivateContactInput!) {
+    updatePrivateContact(input: $input) {
+      ...ViewerFields
+    }
   }
-}
-    ${ViewerFieldsFragmentDoc}`;
-export type UpdatePrivateContactMutationFn = Apollo.MutationFunction<UpdatePrivateContactMutation, UpdatePrivateContactMutationVariables>;
+  ${ViewerFieldsFragmentDoc}
+`;
+export type UpdatePrivateContactMutationFn = Apollo.MutationFunction<
+  UpdatePrivateContactMutation,
+  UpdatePrivateContactMutationVariables
+>;
 
 /**
  * __useUpdatePrivateContactMutation__
@@ -910,10 +1931,24 @@ export type UpdatePrivateContactMutationFn = Apollo.MutationFunction<UpdatePriva
  *   },
  * });
  */
-export function useUpdatePrivateContactMutation(baseOptions?: Apollo.MutationHookOptions<UpdatePrivateContactMutation, UpdatePrivateContactMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<UpdatePrivateContactMutation, UpdatePrivateContactMutationVariables>(UpdatePrivateContactDocument, options);
-      }
-export type UpdatePrivateContactMutationHookResult = ReturnType<typeof useUpdatePrivateContactMutation>;
-export type UpdatePrivateContactMutationResult = Apollo.MutationResult<UpdatePrivateContactMutation>;
-export type UpdatePrivateContactMutationOptions = Apollo.BaseMutationOptions<UpdatePrivateContactMutation, UpdatePrivateContactMutationVariables>;
+export function useUpdatePrivateContactMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    UpdatePrivateContactMutation,
+    UpdatePrivateContactMutationVariables
+  >,
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return Apollo.useMutation<UpdatePrivateContactMutation, UpdatePrivateContactMutationVariables>(
+    UpdatePrivateContactDocument,
+    options,
+  );
+}
+export type UpdatePrivateContactMutationHookResult = ReturnType<
+  typeof useUpdatePrivateContactMutation
+>;
+export type UpdatePrivateContactMutationResult =
+  Apollo.MutationResult<UpdatePrivateContactMutation>;
+export type UpdatePrivateContactMutationOptions = Apollo.BaseMutationOptions<
+  UpdatePrivateContactMutation,
+  UpdatePrivateContactMutationVariables
+>;

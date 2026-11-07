@@ -36,6 +36,8 @@ export const envSchema = z
     RATE_LIMIT_TTL_SECONDS: z.coerce.number().int().positive().default(60),
     RATE_LIMIT_DEFAULT_MAX: z.coerce.number().int().positive().default(300),
     RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(10),
+    /** Publicaciones por usuario y hora. */
+    RATE_LIMIT_POSTS_PER_HOUR: z.coerce.number().int().positive().default(10),
 
     PRIVACY_NOTICE_VERSION: z.string().min(1),
 

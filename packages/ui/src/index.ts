@@ -18,6 +18,17 @@ export { TextAreaField, type TextAreaFieldProps } from './components/TextAreaFie
 export { ProfileHeader, type ProfileHeaderProps } from './components/ProfileHeader';
 export { Notice, type NoticeProps } from './components/Notice';
 export { PageContainer, type PageContainerProps } from './components/PageContainer';
+export { PostCard, PostCardSkeleton, type PostCardProps } from './components/PostCard';
+export { ErrorState, type ErrorStateProps } from './components/ErrorState';
+export {
+  FloatingActionButton,
+  type FloatingActionButtonProps,
+} from './components/FloatingActionButton';
+export {
+  PostComposer,
+  type PostComposerLabels,
+  type PostComposerProps,
+} from './components/PostComposer';
 export {
   BackIcon,
   CameraIcon,
@@ -25,6 +36,8 @@ export {
   HomeIcon,
   LockIcon,
   LogOutIcon,
+  MoreIcon,
+  PlusIcon,
   ProfileIcon,
   SearchIcon,
   TrashIcon,

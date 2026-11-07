@@ -58,6 +58,15 @@ input CreateGroupInput {
   visibility: GroupVisibility = PRIVATE
 }
 
+input CreatePostInput {
+  """Hasta 5000 caracteres."""
+  text: String
+
+  """De 1 a 120 caracteres."""
+  title: String!
+  visibility: PostVisibility = public
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -154,6 +163,12 @@ type Mutation {
   """
   confirmAvatarUpload(assetId: ID!): MediaAsset!
   createGroup(input: CreateGroupInput!): Group!
+
+  """Crea una publicación (máximo 10 por hora)."""
+  createPost(input: CreatePostInput!): Post!
+
+  """Borra (lógicamente) una publicación propia."""
+  deletePost(postId: ID!): ID!
   login(input: LoginInput!): AuthPayload!
 
   """Cierra la sesión actual o todas (allDevices)."""
@@ -192,6 +207,44 @@ type PageInfo {
   startCursor: String
 }
 
+type Post {
+  """Datos públicos actuales del autor (nunca datos privados)."""
+  author: PublicUser!
+  counts: PostCounts!
+  createdAt: DateTime!
+  id: ID!
+  text: String!
+  title: String!
+
+  """true si el usuario actual es el autor."""
+  viewerIsAuthor: Boolean!
+  visibility: PostVisibility!
+}
+
+type PostConnection {
+  edges: [PostEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PostCounts {
+  comments: Int!
+  reactions: Int!
+  shares: Int!
+}
+
+type PostEdge {
+  cursor: String!
+  node: Post!
+}
+
+enum PostVisibility {
+  """Solo sus seguidores (y el autor)."""
+  followers
+
+  """Cualquier persona con sesión iniciada."""
+  public
+}
+
 """Datos de contacto privados del estudiante."""
 type PrivateContact {
   altEmail: String
@@ -209,12 +262,24 @@ type ProfileQuality {
   key: String!
 }
 
+type PublicUser {
+  avatar: Avatar
+  bio: String
+  displayName: String!
+  handle: String!
+  id: ID!
+  tags: [String!]!
+}
+
 type Query {
   """
   Devuelve null si el grupo no existe o el usuario no puede verlo (sin distinguir los casos, para no revelar la existencia de grupos privados).
   """
   group(id: ID!): Group
   groupMembers(after: String, first: Int = 20, groupId: ID!): GroupMemberConnection!
+
+  """Inicio: publicaciones públicas, de la más reciente a la más antigua."""
+  homeFeed(after: String, first: Int = 20): PostConnection!
 
   """Usuario autenticado."""
   me: User!
@@ -226,6 +291,9 @@ type Query {
 
   """Perfil público por handle."""
   user(handle: String!): User
+
+  """Publicaciones de un perfil."""
+  userPosts(after: String, first: Int = 20, handle: String!): PostConnection!
 }
 
 input RegisterInput {

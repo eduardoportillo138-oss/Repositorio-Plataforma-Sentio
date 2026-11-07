@@ -13,6 +13,7 @@ import { buildGraphqlOptions } from './common/graphql/graphql.options';
 import { GqlAuthGuard } from './common/guards/gql-auth.guard';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { AppConfigService } from './config/app-config.service';
 import { AppConfigModule } from './config/config.module';
 import { GatewaysModule } from './gateways/gateways.module';
@@ -66,6 +67,7 @@ import { WorkersModule } from './workers/workers.module';
         };
       },
     }),
+    RateLimitModule,
     ConditionalModule.registerWhen(WorkersModule, (env) => env.QUEUES_ENABLED !== 'false'),
     AuthModule,
     UsersModule,

@@ -8,6 +8,7 @@ import {
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { relayStylePagination } from '@apollo/client/utilities';
 import { ErrorCode } from '@sentio/core';
 import { print } from 'graphql';
 import {
@@ -117,9 +118,26 @@ export function createApolloClient(options: CreateApolloClientOptions): SentioAp
 
   const client = new ApolloClient({
     link: ApolloLink.from([refreshLink, authLink, httpLink]),
-    cache: new InMemoryCache(),
+    cache: createCache(),
     defaultOptions: { watchQuery: { fetchPolicy: 'cache-and-network' } },
   });
 
   return { client, refresh };
+}
+
+/**
+ * Caché normalizada. Las listas paginadas por cursor se fusionan página tras página
+ * (relayStylePagination); pedir sin `after` (refetch) reemplaza la lista.
+ */
+export function createCache(): InMemoryCache {
+  return new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          homeFeed: relayStylePagination([]),
+          userPosts: relayStylePagination(['handle']),
+        },
+      },
+    },
+  });
 }

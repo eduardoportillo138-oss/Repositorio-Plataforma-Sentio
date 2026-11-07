@@ -15,13 +15,18 @@ module.exports = {
   collectCoverageFrom: [
     'src/modules/users/**/*.ts',
     'src/modules/media/**/*.ts',
+    'src/modules/posts/**/*.ts',
+    'src/common/rate-limit/**/*.ts',
     'src/workers/media.processor.ts',
+    'src/workers/posts.processor.ts',
     '!**/*.spec.ts',
     '!**/*.module.ts',
   ],
   coverageThreshold: {
     './src/modules/users/': { statements: 80, branches: 80, functions: 80, lines: 80 },
     './src/modules/media/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/modules/posts/': { statements: 80, branches: 80, functions: 80, lines: 80 },
+    './src/common/rate-limit/': { statements: 80, branches: 80, functions: 80, lines: 80 },
   },
   projects: [
     {

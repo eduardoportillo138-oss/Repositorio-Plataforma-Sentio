@@ -2,6 +2,7 @@ export const QueueName = {
   NOTIFICATIONS: 'notifications',
   FEED_FANOUT: 'feed-fanout',
   MEDIA: 'media',
+  POSTS: 'posts',
 } as const;
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName];
@@ -34,3 +35,13 @@ export interface DeleteObjectsJob {
 }
 
 export type MediaJob = ProcessAvatarJob | DeleteObjectsJob;
+
+/** Nombres de job de la cola `posts`. */
+export const PostsJobName = {
+  /** Copia los datos públicos actuales del autor en sus publicaciones. */
+  SYNC_AUTHOR: 'sync-author',
+} as const;
+
+export interface SyncAuthorJob {
+  userId: string;
+}

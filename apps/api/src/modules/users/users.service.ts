@@ -4,6 +4,7 @@ import { type Locale, type PrivateContactData, type UpdateProfileInput } from '@
 import { type ClientSession, Model, Types } from 'mongoose';
 import { Errors } from '../../common/errors/app-error';
 import { type Avatar, User, type UserDocumentLean } from './schemas/user.schema';
+import { UserEvents } from './user-events';
 
 export interface CreateUserData {
   email: string;
@@ -19,7 +20,10 @@ export interface CreateUserData {
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<User>,
+    private readonly events: UserEvents,
+  ) {}
 
   async create(data: CreateUserData, session?: ClientSession): Promise<UserDocumentLean> {
     const now = new Date();
@@ -103,6 +107,7 @@ export class UsersService {
       .lean<UserDocumentLean>()
       .exec();
     if (!doc) throw Errors.notFound('Usuario');
+    if (input.displayName !== undefined) this.events.profileChanged(userId);
     return doc;
   }
 
@@ -137,6 +142,7 @@ export class UsersService {
       .lean<Pick<User, 'avatar'>>()
       .exec();
     if (!before) throw Errors.notFound('Usuario');
+    this.events.profileChanged(userId);
     return before.avatar ?? null;
   }
 
@@ -147,6 +153,7 @@ export class UsersService {
       .lean<UserDocumentLean>()
       .exec();
     if (!before) throw Errors.notFound('Usuario');
+    if (before.avatar) this.events.profileChanged(userId);
     return { user: { ...before, avatar: null }, previous: before.avatar ?? null };
   }
 
