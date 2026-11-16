@@ -25,7 +25,7 @@
     "@sentio/config": "workspace:*",
     "@types/react": "19.1.17",
     "eslint": "9.39.5",
-    "react": "19.1.0",
+    "react": "19.1.10",
     "typescript": "5.9.3"
   }
 }
