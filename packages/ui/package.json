@@ -26,8 +26,8 @@
     "@sentio/config": "workspace:*",
     "@types/react": "19.1.17",
     "eslint": "9.39.5",
-    "react": "19.1.0",
-    "react-native-svg": "15.12.1",
+    "react": "19.1.10",
+    "react-native-svg": "15.16.1",
     "typescript": "5.9.3"
   }
 }
